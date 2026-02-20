@@ -74,6 +74,7 @@ export function getDOMElements() {
         connectBtn2: document.getElementById('connectBtn2'),
         statusText: document.getElementById('statusText'),
         statusDot: document.getElementById('statusDot'),
+        statusIndicator: document.getElementById('statusIndicator'),
         heartRateEl: document.getElementById('bpm-display'), // 使用bpm-display作为heartRateEl
         bpmDisplay: document.getElementById('bpm-display'),
         bpmUnit: document.getElementById('bpm-unit'),

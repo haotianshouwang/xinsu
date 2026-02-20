@@ -12,6 +12,9 @@ let device = null;
 let server = null;
 let connected = false;
 
+// 设备名称存储
+let deviceName = '';
+
 // 连接按钮事件
 function setupConnectButtons(connectBtn, connectBtn2, initAudio, updateStatus, updateConnectButtons, onUpdateHeartRate, logDebug, onHeartRateChanged, onDisconnected) {
     [connectBtn, connectBtn2].forEach(btn => {
@@ -31,20 +34,20 @@ function setupConnectButtons(connectBtn, connectBtn2, initAudio, updateStatus, u
                 try {
                     logDebug('SCAN', '正在扫描蓝牙设备...');
                     log(LOG_MODULES.BLUETOOTH, '正在扫描蓝牙设备...', 'basic');
-                    updateStatus('扫描中...', false);
+                    updateStatus('扫描中...', false, null, '扫描中...', false);
                     btn.disabled = true;
 
                     device = await navigator.bluetooth.requestDevice({
                         filters: [{ services: [HEART_RATE_SERVICE] }]
                     });
 
-                    const deviceName = device.name || '未知设备';
+                    deviceName = device.name || '未知设备';
                     logDebug('FOUND', `发现设备: ${deviceName}`);
                     log(LOG_MODULES.BLUETOOTH, `发现设备: ${deviceName}`, 'basic');
                     
                     device.addEventListener('gattserverdisconnected', onDisconnected);
 
-                    updateStatus('连接中...', false);
+                    updateStatus('连接中...', false, null, '连接中...', false);
                     logDebug('CONN', '正在连接 GATT 服务器...');
                     log(LOG_MODULES.BLUETOOTH, '正在连接 GATT 服务器...', 'basic');
 
@@ -70,14 +73,14 @@ function setupConnectButtons(connectBtn, connectBtn2, initAudio, updateStatus, u
                     updateConnectionStatus(true, '已连接');
                     onUpdateHeartRate('--');
                     updateConnectButtons('断开连接', true);
-                    updateStatus('已连接', true);
+                    updateStatus('已连接', true, null, '已连接', true);
                     log(LOG_MODULES.BLUETOOTH, '设备连接成功', 'basic');
 
                 } catch (err) {
                     console.error('连接失败：', err);
                     logDebug('FAIL', `错误: ${err.message}`, true);
                     log(LOG_MODULES.BLUETOOTH, `连接失败: ${err.message}`, 'basic');
-                    updateStatus('连接失败', false);
+                    updateStatus('连接失败', false, null, '连接失败', false);
                     updateConnectButtons('连接设备', false);
                     connected = false;
                 }
@@ -87,13 +90,21 @@ function setupConnectButtons(connectBtn, connectBtn2, initAudio, updateStatus, u
 }
 
 // 更新状态显示
-function updateStatus(statusText, connectionStatus, statusDot, text, isConnected) {
+function updateStatus(statusText, connectionStatus, statusDot, text, isConnected, statusIndicator) {
     if (statusText) statusText.textContent = text;
     if (connectionStatus) connectionStatus.textContent = text;
     if (statusDot) {
         statusDot.classList.remove('connected', 'alarm');
         if (isConnected) {
             statusDot.classList.add('connected');
+        }
+    }
+    // 更新状态指示器的标题
+    if (statusIndicator) {
+        if (isConnected && deviceName) {
+            statusIndicator.title = `⌚: ${deviceName}`;
+        } else {
+            statusIndicator.title = text;
         }
     }
 }
@@ -180,7 +191,7 @@ function handleHeartRate(event, onUpdateHeartRate, logDebug, stopAlarm) {
 function onDisconnected(updateStatus, onUpdateHeartRate, updateConnectButtons, logDebug, stopAlarm, clearECGToZero) {
     logDebug('DISC', '设备已断开连接', true);
     log(LOG_MODULES.BLUETOOTH, '设备已断开连接', 'basic');
-    updateStatus('已断开', false);
+    updateStatus('已断开', false, null, '已断开', false);
     
     // 使用心率数据管理模块更新数据
     updateHeartRate(null);

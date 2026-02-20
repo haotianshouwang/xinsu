@@ -29,7 +29,7 @@
     <header class="top-bar">
         <div class="brand">
             <div class="logo">心宿</div>
-            <div class="status-indicator">
+            <div class="status-indicator" id="statusIndicator" title="未连接">
                 <span class="status-dot" id="statusDot"></span>
                 <span id="statusText">未连接</span>
             </div>
@@ -44,7 +44,6 @@
                 </label>
             </div>
             <button class="connect-btn" id="connectBtn">连接设备</button>
-            <button class="connect-btn style-toggle-btn" onclick="toggleStyle()">换个样式</button>
             <button class="connect-btn" id="settingsBtn">设置</button>
         </div>
     </header>
@@ -93,6 +92,10 @@
             <div class="settings-nav">
                 <button class="settings-nav-item active" data-section="interface">界面设置</button>
                 <button class="settings-nav-item" data-section="background">背景设置</button>
+                <button class="settings-nav-item" data-section="effects">效果设置</button>
+                <button class="settings-nav-item" data-section="ecg">ECG设置</button>
+                <button class="settings-nav-item" data-section="heart-rate">心率设置</button>
+                <button class="settings-nav-item" data-section="theme">主题设置</button>
                 <button class="settings-nav-item" data-section="logs">日志设置</button>
             </div>
             <!-- 设置内容 -->
@@ -103,13 +106,26 @@
                     <div class="settings-group">
                         <label class="settings-label">界面样式</label>
                         <div class="interface-options">
-                            <div class="interface-option" data-style="style1">
-                                <div class="interface-preview style1-preview"></div>
-                                <span>样式 1</span>
-                            </div>
-                            <div class="interface-option" data-style="style2">
-                                <div class="interface-preview style2-preview"></div>
-                                <span>样式 2</span>
+                            <div class="interface-option selected" data-style="style1">
+                                <div class="interface-preview style1-preview">
+                                    <div class="preview-top-bar">
+                                        <div class="preview-logo">心宿</div>
+                                        <div class="preview-controls">
+                                            <div class="preview-btn">音效</div>
+                                            <div class="preview-btn">连接</div>
+                                            <div class="preview-btn">设置</div>
+                                        </div>
+                                    </div>
+                                    <div class="preview-main">
+                                        <div class="preview-heart-rate">85</div>
+                                        <div class="preview-ecg"></div>
+                                    </div>
+                                    <div class="preview-footer">
+                                        <div class="preview-warning">警告：仅供娱乐</div>
+                                        <div class="preview-info">昊天兽王 | milirstudio</div>
+                                    </div>
+                                </div>
+                                <span>默认样式</span>
                             </div>
                         </div>
                     </div>
@@ -140,14 +156,181 @@
                         <label class="settings-label">背景图片</label>
                         <input type="text" id="bgImageUrl" placeholder="输入图片URL">
                         <div class="bg-image-local">
-                            <label class="settings-label">本地图片</label>
-                            <select id="bgLocalImageSelect">
-                                <option value="">选择本地图片</option>
-                            </select>
+                            <label class="settings-label">壁纸上传</label>
+                            <input type="file" id="bgImageUpload" accept="image/*" style="display: none;">
+                            <button class="connect-btn" id="uploadBtn" onclick="document.getElementById('bgImageUpload').click()">上传壁纸</button>
+                            <div class="wallpaper-grid" id="wallpaperGrid"></div>
                         </div>
                     </div>
                 </div>
 
+                <!-- 效果设置 -->
+                <div class="settings-section" id="effects-section" style="display: none;">
+                    <h4>效果设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">背景粒子效果</label>
+                        <div class="effects-options">
+                            <label class="module-log-item">
+                                <input type="checkbox" id="particlesToggle" checked>
+                                <span>启用粒子效果</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">粒子效果</label>
+                        <select id="particlesEffect">
+                            <option value="标准" selected>标准</option>
+                            <option value="星云">星云</option>
+                            <option value="脉冲">脉冲</option>
+                            <option value="波浪">波浪</option>
+                            <option value="银河">银河</option>
+                            <option value="萤火虫">萤火虫</option>
+                            <option value="极光">极光</option>
+                            <option value="暴风雪">暴风雪</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">粒子颜色</label>
+                        <input type="color" id="particlesColor" value="#ff0033">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">粒子数量</label>
+                        <div class="range-with-input">
+                            <input type="range" id="particlesCount" min="500" max="5000" value="2000" step="100">
+                            <input type="number" id="particlesCountInput" min="500" max="5000" value="2000" step="100" style="width: 80px; margin-left: 10px;">
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">粒子大小</label>
+                        <input type="range" id="particlesSize" min="0.1" max="2" value="0.5" step="0.1">
+                    </div>
+                </div>
+                
+                <!-- ECG设置 -->
+                <div class="settings-section" id="ecg-section" style="display: none;">
+                    <h4>ECG设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">表格颜色</label>
+                        <input type="color" id="ecgGridColor" value="#ffff00">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">表格明显度</label>
+                        <input type="range" id="ecgGridOpacity" min="0" max="1" value="0.1" step="0.01">
+                        <span id="ecgGridOpacityValue">0.1</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">线条颜色</label>
+                        <input type="color" id="ecgLineColor" value="#ff0033">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">线条宽度</label>
+                        <input type="range" id="ecgLineWidth" min="1" max="5" value="2" step="0.5">
+                        <span id="ecgLineWidthValue">2</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">P波幅度</label>
+                        <input type="range" id="ecgPWave" min="0" max="0.3" value="0.15" step="0.01">
+                        <span id="ecgPWaveValue">0.15</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">Q波幅度</label>
+                        <input type="range" id="ecgQWave" min="-0.4" max="0" value="-0.1" step="0.01">
+                        <span id="ecgQWaveValue">-0.1</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">R波幅度</label>
+                        <input type="range" id="ecgRWave" min="0" max="1" value="0.8" step="0.01">
+                        <span id="ecgRWaveValue">0.8</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">S波幅度</label>
+                        <input type="range" id="ecgSWave" min="-0.4" max="0" value="-0.2" step="0.01">
+                        <span id="ecgSWaveValue">-0.2</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">T波幅度</label>
+                        <input type="range" id="ecgTWave" min="-0.3" max="0.4" value="0.25" step="0.01">
+                        <span id="ecgTWaveValue">0.25</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">抖动强度</label>
+                        <input type="range" id="ecgJitter" min="0" max="0.3" value="0.05" step="0.01">
+                        <span id="ecgJitterValue">0.05</span>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">预设</label>
+                        <select id="ecgPreset">
+                            <option value="默认" selected>默认</option>
+                            <option value="正常">正常</option>
+                            <option value="心肌梗塞">心肌梗塞</option>
+                            <option value="干扰">干扰</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">效果</label>
+                        <select id="ecgEffect">
+                            <option value="标准" selected>标准</option>
+                            <option value="科技感">科技感</option>
+                            <option value="极简">极简</option>
+                            <option value="复古">复古</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <button class="connect-btn" id="ecgRandomBtn">随机生成</button>
+                    </div>
+                </div>
+                
+                <!-- 心率设置 -->
+                <div class="settings-section" id="heart-rate-section" style="display: none;">
+                    <h4>心率设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">显示位置</label>
+                        <select id="heartRatePosition">
+                            <option value="center">居中</option>
+                            <option value="top">顶部</option>
+                            <option value="bottom">底部</option>
+                            <option value="left" selected>左侧</option>
+                            <option value="right">右侧</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">显示样式</label>
+                        <select id="heartRateStyle">
+                            <option value="digital" selected>数字</option>
+                            <option value="analog">模拟</option>
+                            <option value="3d">3D</option>
+                            <option value="pulse">脉冲</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">显示颜色</label>
+                        <input type="color" id="heartRateColor" value="#ff0033">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">字体大小</label>
+                        <input type="range" id="heartRateSize" min="40" max="200" value="100" step="10">
+                    </div>
+                </div>
+                
+                <!-- 主题设置 -->
+                <div class="settings-section" id="theme-section" style="display: none;">
+                    <h4>主题设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">主题颜色</label>
+                        <input type="color" id="themeColor" value="#ff0033">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">辅助颜色</label>
+                        <input type="color" id="secondaryColor" value="#ffffff">
+                    </div>
+                    <div class="settings-group">
+                        <label class="module-log-item">
+                            <input type="checkbox" id="footerToggle" checked>
+                            <span>显示详细信息栏</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <!-- 日志设置 -->
                 <div class="settings-section" id="logs-section" style="display: none;">
                     <h4>日志设置</h4>
@@ -176,7 +359,7 @@
             <h4>日志</h4>
             <div class="log-controls">
                 <button id="clearLogBtn">清空</button>
-                <button id="pinLogBtn">📌</button>
+                <button id="pinLogBtn">📎</button>
                 <button id="closeLogBtn">×</button>
             </div>
         </div>

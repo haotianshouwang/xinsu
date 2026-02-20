@@ -5,6 +5,15 @@
     box-sizing: border-box;
 }
 
+/* 按钮重置 */
+button {
+    font: inherit;
+    border: none;
+    background: none;
+    cursor: pointer;
+    outline: none;
+}
+
 /* 白天模式 */
 body.light-mode {
     --bg: #ffffff;
@@ -80,15 +89,59 @@ body.style1 #bpm-unit {
 
 /* 样式1：按钮 */
 body.style1 .connect-btn {
-    background: transparent;
-    border: 1px solid var(--fg);
+    background: var(--card);
+    border: 1px solid var(--border);
     color: var(--fg);
+    border-radius: 6px;
 }
 
 body.style1 .connect-btn:hover {
-    background: var(--fg);
-    color: var(--bg);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.2);
+}
+
+/* 样式1：音效控制 */
+body.style1 .sound-control {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--fg) !important;
+    border-radius: 6px !important;
+}
+
+body.style1 .sound-control:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.2) !important;
+}
+
+/* 强制所有按钮样式一致 */
+.controls .sound-control,
+.controls .connect-btn {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--fg) !important;
+    border-radius: 6px !important;
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 2px !important;
+    text-transform: uppercase !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    min-height: 38px !important;
+    box-sizing: border-box !important;
+}
+
+.controls .sound-control:hover,
+.controls .connect-btn:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.2) !important;
 }
 
 /* 样式1：ECG容器 */
@@ -150,6 +203,12 @@ body.light-mode .top-bar {
     font-size: 11px;
     color: var(--muted);
     letter-spacing: 1px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    pointer-events: auto;
+    position: relative;
+    z-index: 101;
 }
 
 .status-dot {
@@ -194,8 +253,22 @@ body.light-mode .top-bar {
     gap: 8px;
     padding: 8px 12px;
     background: var(--card);
+    color: var(--fg);
     border: 1px solid var(--border);
     border-radius: 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sound-control:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.2);
 }
 
 .sound-label {
@@ -269,18 +342,19 @@ body.light-mode .top-bar {
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 10px 20px;
-    background: transparent;
+    padding: 8px 12px;
+    background: var(--card);
     color: var(--fg);
-    border: 1px solid var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .connect-btn:hover {
-    background: var(--accent);
-    color: var(--bg);
-    box-shadow: 0 0 20px rgba(255, 26, 26, 0.3);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.2);
 }
 
 .connect-btn:disabled {
@@ -311,6 +385,70 @@ body.light-mode .top-bar {
     padding: 30px 0;
     position: relative;
     z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+/* 心率显示位置 */
+.heart-rate-section.position-top {
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 50px;
+    padding-bottom: 10px;
+}
+
+.heart-rate-section.position-bottom {
+    justify-content: center;
+    align-items: flex-end;
+    padding-top: 10px;
+    padding-bottom: 50px;
+}
+
+.heart-rate-section.position-left {
+    justify-content: flex-start;
+    align-items: center;
+    padding-left: 50px;
+    padding-right: 10px;
+}
+
+.heart-rate-section.position-right {
+    justify-content: flex-end;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 50px;
+}
+
+.heart-rate-section.position-center {
+    justify-content: center;
+    align-items: center;
+    padding: 30px 0;
+}
+
+/* 心率显示样式 */
+.heart-rate-display.style-digital {
+    font-family: 'Orbitron', sans-serif;
+}
+
+.heart-rate-display.style-analog {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.heart-rate-display.style-3d {
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 20px rgba(255, 0, 51, 0.8), 0 0 40px rgba(255, 0, 51, 0.4), 0 0 60px rgba(255, 0, 51, 0.2);
+}
+
+.heart-rate-display.style-pulse {
+    font-family: 'Orbitron', sans-serif;
+    animation: pulseGlow 1s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 40px rgba(255, 0, 51, 0.8), 0 0 60px rgba(255, 0, 51, 0.6);
+    }
 }
 
 .heart-rate-display {
@@ -434,7 +572,7 @@ body.light-mode .top-bar {
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 30px rgba(255, 26, 26, 0.2);
-    z-index: 1000;
+    z-index: 1002;
     overflow: hidden;
     backdrop-filter: blur(10px);
     display: none;
@@ -451,9 +589,18 @@ body.light-mode .top-bar {
     justify-content: space-between;
     align-items: center;
     padding: 16px 24px;
-    background: var(--card);
     border-bottom: 1px solid var(--border);
     cursor: move;
+}
+
+/* 白天模式下的设置头部 */
+body.light-mode .settings-header {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 夜间模式下的设置头部 */
+body.dark-mode .settings-header {
+    background: rgba(10, 10, 10, 0.7) !important;
 }
 
 .settings-header h3 {
@@ -493,11 +640,20 @@ body.light-mode .top-bar {
 
 .settings-nav {
     width: 150px;
-    background: var(--card);
     border-right: 1px solid var(--border);
     padding: 20px 0;
     display: flex;
     flex-direction: column;
+}
+
+/* 白天模式下的设置导航 */
+body.light-mode .settings-nav {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 夜间模式下的设置导航 */
+body.dark-mode .settings-nav {
+    background: rgba(10, 10, 10, 0.7) !important;
 }
 
 .settings-nav-item {
@@ -532,6 +688,16 @@ body.light-mode .top-bar {
     overflow-y: auto;
     max-height: calc(80vh - 60px);
     cursor: default;
+}
+
+/* 白天模式下的设置内容 */
+body.light-mode .settings-content {
+    background: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 夜间模式下的设置内容 */
+body.dark-mode .settings-content {
+    background: rgba(10, 10, 10, 0.6) !important;
 }
 
 .settings-section {
@@ -630,42 +796,331 @@ body.light-mode .top-bar {
 }
 
 .style1-preview {
-    background: var(--bg);
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
     position: relative;
     border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0;
+    height: 200px;
+}
+
+.preview-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.7);
+    border-bottom: 1px solid var(--border);
+}
+
+.preview-logo {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: var(--accent);
+}
+
+.preview-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.preview-btn {
+    font-size: 8px;
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--fg);
+}
+
+.preview-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+.preview-footer {
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.7);
+    border-top: 1px solid var(--border);
+    font-size: 8px;
+    color: var(--muted);
+}
+
+.preview-warning {
+    color: var(--accent);
+    margin-bottom: 2px;
+}
+
+.preview-info {
+    font-size: 7px;
+}
+
+.style1-preview::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: rgba(255, 0, 51, 0.3);
 }
 
 .style1-preview::after {
-    content: "样式 1";
+    content: "";
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: var(--fg);
-    font-size: 12px;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: rgba(255, 0, 51, 0.3);
+}
+
+/* 样式1预览内容 */
+.style1-preview .preview-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.style1-preview .preview-heart-rate {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ff0033;
+    text-shadow: 0 0 10px rgba(255, 0, 51, 0.5);
+}
+
+.style1-preview .preview-ecg {
+    width: 100%;
+    height: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.style1-preview .preview-ecg::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 0, 51, 0.3);
+}
+
+.style1-preview .preview-ecg::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 0, 51, 0.5) 20%, rgba(255, 0, 51, 0.8) 50%, rgba(255, 0, 51, 0.5) 80%, transparent 100%);
+    clip-path: polygon(
+        0% 50%, 10% 50%, 15% 20%, 20% 80%, 25% 50%,
+        35% 50%, 40% 30%, 45% 70%, 50% 50%,
+        60% 50%, 65% 40%, 70% 60%, 75% 50%,
+        85% 50%, 90% 35%, 95% 65%, 100% 50%
+    );
+}
+
+.style1-preview .preview-label {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    color: #ff0033;
+    text-shadow: 0 0 5px rgba(255, 0, 51, 0.3);
+    text-align: center;
 }
 
 .style2-preview {
-    background: var(--bg);
+    background: linear-gradient(135deg, #050505 0%, #111111 100%);
     border: 1px solid var(--border);
     position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0;
+    height: 200px;
+}
+
+.style2-preview::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: rgba(255, 26, 26, 0.2);
 }
 
 .style2-preview::after {
-    content: "样式 2";
+    content: "";
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    height: 1px;
+    background: rgba(255, 26, 26, 0.2);
+}
+
+/* 样式2预览内容 */
+.style2-preview .preview-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.style2-preview .preview-heart-rate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 900;
     color: white;
-    font-size: 12px;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 0 15px rgba(255, 26, 26, 0.5);
+}
+
+.style2-preview .preview-ecg {
+    width: 100%;
+    height: 20px;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 26, 26, 0.1);
+    border-radius: 2px;
+}
+
+.style2-preview .preview-ecg::before {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 26, 26, 0.3);
+}
+
+.style2-preview .preview-ecg::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 26, 26, 0.6) 20%, rgba(255, 26, 26, 0.9) 50%, rgba(255, 26, 26, 0.6) 80%, transparent 100%);
+    clip-path: polygon(
+        0% 50%, 10% 50%, 15% 20%, 20% 80%, 25% 50%,
+        35% 50%, 40% 30%, 45% 70%, 50% 50%,
+        60% 50%, 65% 40%, 70% 60%, 75% 50%,
+        85% 50%, 90% 35%, 95% 65%, 100% 50%
+    );
+}
+
+.style2-preview .preview-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 26, 26, 0.7);
+    text-align: center;
 }
 
 /* 背景图片本地选择 */
 .bg-image-local {
     margin-top: 12px;
+}
+
+/* 壁纸网格 */
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    transition: all 0.3s ease;
+}
+
+/* 壁纸项 */
+.wallpaper-item {
+    position: relative;
+    width: 100px;
+    height: 75px;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.wallpaper-item:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.3);
+}
+
+.wallpaper-item.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(255, 26, 26, 0.5);
+}
+
+.wallpaper-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wallpaper-item .wallpaper-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(255, 26, 26, 0.8);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.wallpaper-item:hover .wallpaper-remove {
+    opacity: 1;
+}
+
+/* 折叠按钮 */
+.wallpaper-collapse {
+    margin-top: 8px;
+    text-align: center;
+}
+
+.wallpaper-collapse-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.3s ease;
+}
+
+.wallpaper-collapse-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 /* 响应式 */
@@ -725,17 +1180,26 @@ body.light-mode .top-bar {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 400px;
+    width: 600px;
     max-width: 90vw;
     max-height: 80vh;
-    background: rgba(5, 5, 5, 0.95);
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 30px rgba(255, 26, 26, 0.2);
-    z-index: 1000;
+    z-index: 1002;
     overflow: hidden;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
     display: none;
+}
+
+/* 白天模式下的设置面板 */
+body.light-mode .settings-panel {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 夜间模式下的设置面板 */
+body.dark-mode .settings-panel {
+    background: rgba(15, 15, 15, 0.7) !important;
 }
 
 .settings-panel.show {
@@ -819,10 +1283,10 @@ body.light-mode .top-bar {
 .settings-group select {
     width: 100%;
     padding: 10px 12px;
-    background: black;
-    border: 1px solid var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--border);
     border-radius: 4px;
-    color: white;
+    color: var(--fg);
     font-size: 12px;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 1px;
@@ -868,9 +1332,8 @@ body.light-mode .top-bar {
 /* 日志面板 */
 .log-panel {
     position: fixed;
-    left: 70%;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 10px;
+    bottom: 100px;
     width: 300px;
     max-width: 90vw;
     max-height: 300px;
@@ -878,7 +1341,7 @@ body.light-mode .top-bar {
     border: 1px solid var(--border);
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(255, 26, 26, 0.1);
-    z-index: 999;
+    z-index: 1001;
     overflow: hidden;
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
@@ -1092,7 +1555,17 @@ body.style2 .heart-rate-value {
 /* 确保心率显示元素始终在ECG和3D背景之上，但在设置按钮和设置面板之下 */
 #heartRate, .heart-rate-value {
   position: relative;  /* 使 z-index 生效 */
-  z-index: 1000;       /* 设置一个合适的层级，确保不被ECG和3D背景覆盖，但不遮挡设置按钮 */
+  z-index: 100;       /* 设置一个合适的层级，确保不被ECG和3D背景覆盖，但不遮挡设置按钮和日志面板 */
+}
+
+/* 日志面板层级 */
+.log-panel {
+  z-index: 1001;       /* 确保日志面板在心率显示之上 */
+}
+
+/* 设置面板层级 */
+.settings-panel {
+  z-index: 1002;      /* 确保设置面板在所有元素之上 */
 }
 
 body.style2 .heart-rate-value.pulse {

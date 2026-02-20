@@ -13,12 +13,6 @@ export const styleConfig = {
         description: 'Cyberpunk style with grid background',
         canvasId: 'ecg-canvas-style1',
         backgroundColor: 0x000000
-    },
-    style2: {
-        name: 'Style 2',
-        description: 'Medical high-tech style',
-        canvasId: 'ecg-canvas-style2',
-        backgroundColor: 0x050505
     }
 };
 
@@ -28,21 +22,18 @@ export function initStyle() {
     log(LOG_MODULES.STYLE, `初始化样式: ${currentStyle}`, 'detailed');
 }
 
-// 切换样式
+// 切换样式 - 现在始终保持style1
 export function toggleStyle(body, resetParticles, initECG, updateECGCanvas, onWindowResize) {
     const oldStyle = currentStyle;
     
-    if (body.classList.contains('style1')) {
-        body.classList.remove('style1');
-        body.classList.add('style2');
-        currentStyle = 'style2';
-    } else {
+    // 确保始终使用style1
+    if (!body.classList.contains('style1')) {
         body.classList.remove('style2');
         body.classList.add('style1');
         currentStyle = 'style1';
     }
     
-    log(LOG_MODULES.STYLE, `切换样式: ${oldStyle} → ${currentStyle}`, 'basic');
+    log(LOG_MODULES.STYLE, `样式保持: ${currentStyle}`, 'basic');
     
     // 重置粒子系统
     if (resetParticles) {
@@ -72,24 +63,21 @@ export function getCurrentStyle() {
     return currentStyle;
 }
 
-// 设置样式
+// 设置样式 - 现在始终使用style1
 export function setStyle(styleName, body, resetParticles, initECG, updateECGCanvas, onWindowResize) {
-    if (!styleConfig[styleName]) {
-        console.error(`Style ${styleName} not found`);
-        log(LOG_MODULES.STYLE, `样式 ${styleName} 未找到`, 'basic');
-        return currentStyle;
-    }
-    
     const oldStyle = currentStyle;
+    
+    // 始终使用style1，忽略传入的styleName
+    const newStyle = 'style1';
     
     // 移除所有样式类
     Object.keys(styleConfig).forEach(style => {
         body.classList.remove(style);
     });
     
-    // 添加新样式类
-    body.classList.add(styleName);
-    currentStyle = styleName;
+    // 添加style1样式类
+    body.classList.add(newStyle);
+    currentStyle = newStyle;
     
     log(LOG_MODULES.STYLE, `设置样式: ${oldStyle} → ${currentStyle}`, 'basic');
     

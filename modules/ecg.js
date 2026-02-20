@@ -7,6 +7,82 @@ export let ecgCtx = null;
 // 导入日志管理模块
 import { log, LOG_MODULES } from './logger.js';
 
+// ECG 配置
+let ecgConfig = {
+    抖动: 0.05,
+    预设: '默认',
+    效果: '标准',
+    gridColor: '#ffff00',
+    gridOpacity: 0.1,
+    lineColor: '#ff0033',
+    lineWidth: 2,
+    pWave: 0.15,
+    qWave: -0.1,
+    rWave: 0.8,
+    sWave: -0.2,
+    tWave: 0.25
+};
+
+// ECG 预设配置
+const ecgPresets = {
+    '默认': {
+        pWave: 0.15,
+        qWave: -0.1,
+        rWave: 0.8,
+        sWave: -0.2,
+        tWave: 0.25,
+        抖动: 0.05
+    },
+    '正常': {
+        pWave: 0.12,
+        qWave: -0.08,
+        rWave: 0.7,
+        sWave: -0.15,
+        tWave: 0.2,
+        抖动: 0.03
+    },
+    '心肌梗塞': {
+        pWave: 0.08,
+        qWave: -0.3,
+        rWave: 0.4,
+        sWave: -0.25,
+        tWave: -0.15,
+        抖动: 0.08
+    },
+    '干扰': {
+        pWave: 0.2,
+        qWave: -0.15,
+        rWave: 0.9,
+        sWave: -0.25,
+        tWave: 0.3,
+        抖动: 0.2
+    }
+};
+
+// ECG 效果配置
+const ecgEffects = {
+    '标准': {
+        lineStyle: 'smooth',
+        glow: true,
+        shadow: false
+    },
+    '科技感': {
+        lineStyle: 'sharp',
+        glow: true,
+        shadow: true
+    },
+    '极简': {
+        lineStyle: 'smooth',
+        glow: false,
+        shadow: false
+    },
+    '复古': {
+        lineStyle: 'sharp',
+        glow: false,
+        shadow: true
+    }
+};
+
 // ECG 显示样式配置
 const ecgStyles = {
     style1: {
@@ -36,6 +112,38 @@ const ecgStyles = {
         alarmingLineWidth: 2.5
     }
 };
+
+// 设置ECG配置
+export function setEcgConfig(config) {
+    ecgConfig = { ...ecgConfig, ...config };
+    if (config.预设 && ecgPresets[config.预设]) {
+        const preset = ecgPresets[config.预设];
+        ecgConfig = { ...ecgConfig, ...preset };
+    }
+    // 确保所有必要的参数都存在
+    if (config.pWave !== undefined) ecgConfig.pWave = config.pWave;
+    if (config.qWave !== undefined) ecgConfig.qWave = config.qWave;
+    if (config.rWave !== undefined) ecgConfig.rWave = config.rWave;
+    if (config.sWave !== undefined) ecgConfig.sWave = config.sWave;
+    if (config.tWave !== undefined) ecgConfig.tWave = config.tWave;
+    if (config.gridColor !== undefined) ecgConfig.gridColor = config.gridColor;
+    if (config.gridOpacity !== undefined) ecgConfig.gridOpacity = config.gridOpacity;
+    if (config.lineColor !== undefined) ecgConfig.lineColor = config.lineColor;
+    if (config.lineWidth !== undefined) ecgConfig.lineWidth = config.lineWidth;
+}
+
+// 获取ECG配置
+export function getEcgConfig() {
+    return ecgConfig;
+}
+
+// 随机生成ECG配置
+export function randomizeEcgConfig() {
+    const randomPreset = Object.keys(ecgPresets)[Math.floor(Math.random() * Object.keys(ecgPresets).length)];
+    const random抖动 = (Math.random() * 0.2).toFixed(2);
+    setEcgConfig({ 预设: randomPreset, 抖动: parseFloat(random抖动) });
+    return ecgConfig;
+}
 
 // ============ 初始化 ECG Canvas ============
 export function initECG(currentStyle) {
@@ -92,20 +200,26 @@ export function generateECGValue(phase, bpm) {
     const cycleLength = 60 / Math.max(30, bpm);
     const t = phase % cycleLength;
     
-    const pWave = t < 0.1 ? 0.15 * Math.sin((t / 0.1) * Math.PI) : 0;
-    const qStart = 0.12;
-    const qWave = (t > qStart && t < qStart + 0.02) ? -0.1 * Math.sin(((t - qStart) / 0.02) * Math.PI) : 0;
-    const rStart = 0.14;
-    const rWave = (t > rStart && t < rStart + 0.04) ? 0.8 * Math.sin(((t - rStart) / 0.04) * Math.PI) : 0;
-    const sStart = 0.18;
-    const sWave = (t > sStart && t < sStart + 0.03) ? -0.2 * Math.sin(((t - sStart) / 0.03) * Math.PI) : 0;
-    const tStart = 0.25;
-    const tWave = (t > tStart && t < tStart + 0.12) ? 0.25 * Math.sin(((t - tStart) / 0.12) * Math.PI) : 0;
+    // 获取当前配置
+    const config = ecgConfig;
     
-    const ecgValue = pWave + qWave + rWave + sWave + tWave;
+    // 生成波形
+    const pWave = t < 0.1 ? config.pWave * Math.sin((t / 0.1) * Math.PI) : 0;
+    const qStart = 0.12;
+    const qWave = (t > qStart && t < qStart + 0.02) ? config.qWave * Math.sin(((t - qStart) / 0.02) * Math.PI) : 0;
+    const rStart = 0.14;
+    const rWave = (t > rStart && t < rStart + 0.04) ? config.rWave * Math.sin(((t - rStart) / 0.04) * Math.PI) : 0;
+    const sStart = 0.18;
+    const sWave = (t > sStart && t < sStart + 0.03) ? config.sWave * Math.sin(((t - sStart) / 0.03) * Math.PI) : 0;
+    const tStart = 0.25;
+    const tWave = (t > tStart && t < tStart + 0.12) ? config.tWave * Math.sin(((t - tStart) / 0.12) * Math.PI) : 0;
+    
+    // 添加抖动
+    const jitter = (Math.random() - 0.5) * config.抖动;
+    const ecgValue = pWave + qWave + rWave + sWave + tWave + jitter;
     
     // 只在详细日志级别输出
-    log(LOG_MODULES.ECG, `生成ECG值: ${ecgValue.toFixed(2)}, 心率: ${bpm} BPM`, 'detailed');
+    log(LOG_MODULES.ECG, `生成ECG值: ${ecgValue.toFixed(2)}, 心率: ${bpm} BPM, 预设: ${config.预设}, 抖动: ${config.抖动}`, 'detailed');
     
     return ecgValue;
 }
@@ -118,14 +232,19 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     const height = ecgCanvas.height / window.devicePixelRatio;
     const centerY = height / 2;
     
-    // 获取当前样式配置
+    // 获取当前样式配置和效果配置
     const styleConfig = ecgStyles[currentStyle] || ecgStyles.style1;
+    const config = ecgConfig;
+    const effect = ecgEffects[config.效果] || ecgEffects['标准'];
     
     ecgCtx.clearRect(0, 0, width, height);
     
     // 绘制网格（如果样式配置要求）
     if (styleConfig.grid) {
-        ecgCtx.strokeStyle = styleConfig.gridColor;
+        // 使用配置的网格颜色和透明度
+        const gridColor = config.gridColor || '#ffff00';
+        const gridOpacity = config.gridOpacity || 0.1;
+        ecgCtx.strokeStyle = gridColor.replace(/[^0-9a-f]/gi, '') + Math.round(gridOpacity * 255).toString(16).padStart(2, '0');
         ecgCtx.lineWidth = 1;
         ecgCtx.beginPath();
         const gridSize = styleConfig.gridSize;
@@ -145,10 +264,21 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     // ECG 曲线
     const gradient = styleConfig.gradient(ecgCtx, width);
     
-    ecgCtx.strokeStyle = isAlarming ? '#ff1a1a' : gradient;
-    ecgCtx.lineWidth = isAlarming ? styleConfig.alarmingLineWidth : styleConfig.lineWidth;
-    ecgCtx.lineCap = 'round';
-    ecgCtx.lineJoin = 'round';
+    // 使用配置的线条颜色和宽度
+    const lineColor = config.lineColor || '#ff0033';
+    const lineWidth = config.lineWidth || 2;
+    ecgCtx.strokeStyle = isAlarming ? '#ff1a1a' : lineColor;
+    ecgCtx.lineWidth = isAlarming ? styleConfig.alarmingLineWidth : lineWidth;
+    ecgCtx.lineCap = effect.lineStyle === 'sharp' ? 'square' : 'round';
+    ecgCtx.lineJoin = effect.lineStyle === 'sharp' ? 'bevel' : 'round';
+    
+    // 添加阴影效果
+    if (effect.shadow) {
+        ecgCtx.shadowColor = 'rgba(255, 26, 26, 0.5)';
+        ecgCtx.shadowBlur = 10;
+        ecgCtx.shadowOffsetX = 0;
+        ecgCtx.shadowOffsetY = 0;
+    }
     
     ecgCtx.beginPath();
     
@@ -166,11 +296,15 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     
     ecgCtx.stroke();
     
+    // 重置阴影
+    ecgCtx.shadowColor = 'transparent';
+    ecgCtx.shadowBlur = 0;
+    
     // 当前点发光
     const lastX = (ecgData.length - 1) * step;
     const lastY = centerY - ecgData[ecgData.length - 1] * (height * 0.35);
     
-    if (pulseIntensity > 0.3 || isAlarming) {
+    if ((effect.glow && pulseIntensity > 0.3) || isAlarming) {
         const glowRadius = Math.max(1, isAlarming ? 30 : 20);
         const glowGradient = ecgCtx.createRadialGradient(lastX, lastY, 0, lastX, lastY, glowRadius);
         glowGradient.addColorStop(0, 'rgba(255, 26, 26, 0.8)');
@@ -183,7 +317,7 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     }
     
     // 只在详细日志级别输出
-    log(LOG_MODULES.ECG, `ECG 绘制完成，样式: ${currentStyle}, 警报状态: ${isAlarming}, 脉冲强度: ${pulseIntensity.toFixed(2)}`, 'detailed');
+    log(LOG_MODULES.ECG, `ECG 绘制完成，样式: ${currentStyle}, 警报状态: ${isAlarming}, 脉冲强度: ${pulseIntensity.toFixed(2)}, 效果: ${config.效果}`, 'detailed');
 }
 
 // 添加新的ECG数据点
