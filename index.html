@@ -84,101 +84,126 @@
     <!-- 设置面板 -->
     <div id="settings-panel" class="settings-panel">
         <div class="settings-header">
-            <h3>设置</h3>
-            <button id="closeSettingsBtn">×</button>
+            <h3>设置中心</h3>
+            <div class="settings-header-actions">
+                <button class="settings-btn-icon" id="resetSettingsBtn" title="重置为默认设置">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6"/>
+                        <path d="M2 11.5a10 10 0 0 1 18.8-4.3"/>
+                        <path d="M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                </button>
+                <button class="settings-btn-icon" id="closeSettingsBtn" title="关闭设置">×</button>
+            </div>
         </div>
         <div class="settings-container">
             <!-- 设置导航 -->
             <div class="settings-nav">
-                <button class="settings-nav-item active" data-section="interface">界面设置</button>
-                <button class="settings-nav-item" data-section="background">背景设置</button>
-                <button class="settings-nav-item" data-section="effects">效果设置</button>
-                <button class="settings-nav-item" data-section="ecg">ECG设置</button>
-                <button class="settings-nav-item" data-section="heart-rate">心率设置</button>
-                <button class="settings-nav-item" data-section="theme">主题设置</button>
-                <button class="settings-nav-item" data-section="logs">日志设置</button>
+                <button class="settings-nav-item active" data-section="appearance">外观设置</button>
+                <button class="settings-nav-item" data-section="display">显示设置</button>
+                <button class="settings-nav-item" data-section="effects">视觉效果</button>
+                <button class="settings-nav-item" data-section="heart-rate">心率监测</button>
+                <button class="settings-nav-item" data-section="ecg">心电图设置</button>
+                <button class="settings-nav-item" data-section="audio">音频设置</button>
+                <button class="settings-nav-item" data-section="system">系统设置</button>
             </div>
             <!-- 设置内容 -->
             <div class="settings-content">
-                <!-- 界面设置 -->
-                <div class="settings-section" id="interface-section">
-                    <h4>界面设置</h4>
+                <!-- 外观设置 -->
+                <div class="settings-section" id="appearance-section">
+                    <h4>外观设置</h4>
                     <div class="settings-group">
-                        <label class="settings-label">界面样式</label>
-                        <div class="interface-options">
-                            <div class="interface-option selected" data-style="style1">
-                                <div class="interface-preview style1-preview">
-                                    <div class="preview-top-bar">
-                                        <div class="preview-logo">心宿</div>
-                                        <div class="preview-controls">
-                                            <div class="preview-btn">音效</div>
-                                            <div class="preview-btn">连接</div>
-                                            <div class="preview-btn">设置</div>
-                                        </div>
-                                    </div>
-                                    <div class="preview-main">
-                                        <div class="preview-heart-rate">85</div>
-                                        <div class="preview-ecg"></div>
-                                    </div>
-                                    <div class="preview-footer">
-                                        <div class="preview-warning">警告：仅供娱乐</div>
-                                        <div class="preview-info">昊天兽王 | milirstudio</div>
-                                    </div>
-                                </div>
-                                <span>默认样式</span>
+                        <label class="settings-label">主题模式</label>
+                        <div class="theme-mode-options">
+                            <div class="theme-mode-option">
+                                <input type="radio" id="theme-light" name="theme-mode" value="light" checked>
+                                <label for="theme-light">
+                                    <div class="theme-preview light-preview"></div>
+                                    <span>浅色模式</span>
+                                </label>
+                            </div>
+                            <div class="theme-mode-option">
+                                <input type="radio" id="theme-dark" name="theme-mode" value="dark">
+                                <label for="theme-dark">
+                                    <div class="theme-preview dark-preview"></div>
+                                    <span>深色模式</span>
+                                </label>
+                            </div>
+                            <div class="theme-mode-option">
+                                <input type="radio" id="theme-auto" name="theme-mode" value="auto">
+                                <label for="theme-auto">
+                                    <div class="theme-preview auto-preview"></div>
+                                    <span>自动模式</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">主色调</label>
+                        <div class="color-picker-group">
+                            <input type="color" id="themeColor" value="#ff0033" class="color-picker">
+                            <div class="color-presets">
+                                <button class="color-preset" data-color="#ff0033"></button>
+                                <button class="color-preset" data-color="#007bff"></button>
+                                <button class="color-preset" data-color="#28a745"></button>
+                                <button class="color-preset" data-color="#ffc107"></button>
+                                <button class="color-preset" data-color="#6f42c1"></button>
                             </div>
                         </div>
                     </div>
                     <div class="settings-group">
                         <label class="toggle-switch">
-                            <input type="checkbox" id="darkModeToggle">
+                            <input type="checkbox" id="footerToggle" checked>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">夜间模式</span>
+                            <span class="toggle-label">显示页脚信息</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- 背景设置 -->
-                <div class="settings-section" id="background-section" style="display: none;">
-                    <h4>背景设置</h4>
+                <!-- 显示设置 -->
+                <div class="settings-section" id="display-section" style="display: none;">
+                    <h4>显示设置</h4>
                     <div class="settings-group">
-                        <label class="settings-label">背景类型</label>
-                        <select id="bgTypeSelect">
-                            <option value="color">纯色背景</option>
-                            <option value="image">图片背景</option>
-                        </select>
-                    </div>
-                    <div class="settings-group bg-color-group">
-                        <label class="settings-label">背景颜色</label>
-                        <input type="color" id="bgColorPicker" value="#000000">
-                    </div>
-                    <div class="settings-group bg-image-group">
-                        <label class="settings-label">背景图片</label>
-                        <input type="text" id="bgImageUrl" placeholder="输入图片URL">
-                        <div class="bg-image-local">
-                            <label class="settings-label">壁纸上传</label>
-                            <input type="file" id="bgImageUpload" accept="image/*" style="display: none;">
-                            <button class="connect-btn" id="uploadBtn" onclick="document.getElementById('bgImageUpload').click()">上传壁纸</button>
-                            <div class="wallpaper-grid" id="wallpaperGrid"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 效果设置 -->
-                <div class="settings-section" id="effects-section" style="display: none;">
-                    <h4>效果设置</h4>
-                    <div class="settings-group">
-                        <label class="settings-label">背景粒子效果</label>
-                        <div class="effects-options">
-                            <label class="module-log-item">
-                                <input type="checkbox" id="particlesToggle" checked>
-                                <span>启用粒子效果</span>
+                        <label class="settings-label">背景设置</label>
+                        <div class="bg-type-options">
+                            <label class="bg-type-option">
+                                <input type="radio" name="bg-type" value="color">
+                                <span>纯色背景</span>
+                            </label>
+                            <label class="bg-type-option">
+                                <input type="radio" name="bg-type" value="image" checked>
+                                <span>图片背景</span>
                             </label>
                         </div>
                     </div>
+                    <div class="settings-group bg-color-group">
+                        <label class="settings-label">背景颜色</label>
+                        <input type="color" id="bgColorPicker" value="#000000" class="color-picker">
+                    </div>
+                    <div class="settings-group bg-image-group">
+                        <label class="settings-label">背景图片</label>
+                        <div class="bg-image-controls">
+                            <input type="text" id="bgImageUrl" placeholder="输入图片URL" class="url-input">
+                            <input type="file" id="bgImageUpload" accept="image/*" style="display: none;">
+                            <button class="settings-btn" id="uploadBtn" onclick="document.getElementById('bgImageUpload').click()">上传本地图片</button>
+                        </div>
+                        <div class="wallpaper-grid" id="wallpaperGrid"></div>
+                    </div>
+                </div>
+
+                <!-- 视觉效果 -->
+                <div class="settings-section" id="effects-section" style="display: none;">
+                    <h4>视觉效果</h4>
                     <div class="settings-group">
-                        <label class="settings-label">粒子效果</label>
-                        <select id="particlesEffect">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="particlesToggle" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">启用粒子效果</span>
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">粒子效果类型</label>
+                        <select id="particlesEffect" class="settings-select">
                             <option value="标准" selected>标准</option>
                             <option value="星云">星云</option>
                             <option value="脉冲">脉冲</option>
@@ -191,84 +216,170 @@
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">粒子颜色</label>
-                        <input type="color" id="particlesColor" value="#ff0033">
+                        <input type="color" id="particlesColor" value="#ff0033" class="color-picker">
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">粒子数量</label>
-                        <div class="range-with-input">
-                            <input type="range" id="particlesCount" min="500" max="5000" value="2000" step="100">
-                            <input type="number" id="particlesCountInput" min="500" max="5000" value="2000" step="100" style="width: 80px; margin-left: 10px;">
+                        <div class="range-control">
+                            <input type="range" id="particlesCount" min="500" max="5000" value="2000" step="100" class="range-slider">
+                            <input type="number" id="particlesCountInput" min="500" max="5000" value="2000" step="100" class="range-input">
                         </div>
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">粒子大小</label>
-                        <input type="range" id="particlesSize" min="0.1" max="2" value="0.5" step="0.1">
+                        <div class="range-control">
+                            <input type="range" id="particlesSize" min="0.1" max="2" value="0.5" step="0.1" class="range-slider">
+                            <span class="range-value">0.5</span>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- ECG设置 -->
+                <!-- 心率监测 -->
+                <div class="settings-section" id="heart-rate-section" style="display: none;">
+                    <h4>心率监测</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">显示位置</label>
+                        <div class="position-grid">
+                            <label class="position-option">
+                                <input type="radio" name="hr-position" value="center">
+                                <span>居中</span>
+                            </label>
+                            <label class="position-option">
+                                <input type="radio" name="hr-position" value="left" checked>
+                                <span>左侧</span>
+                            </label>
+                            <label class="position-option">
+                                <input type="radio" name="hr-position" value="right">
+                                <span>右侧</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">显示样式</label>
+                        <div class="style-options">
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="digital" checked>
+                                <span>数字显示</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="analog">
+                                <span>模拟表盘</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="3d">
+                                <span>3D效果</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="pulse">
+                                <span>脉冲效果</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">显示颜色</label>
+                        <input type="color" id="heartRateColor" value="#ff0033" class="color-picker">
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">字体大小</label>
+                        <div class="range-control">
+                            <input type="range" id="heartRateSize" min="40" max="200" value="100" step="10" class="range-slider">
+                            <span class="range-value">100px</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 心电图设置 -->
                 <div class="settings-section" id="ecg-section" style="display: none;">
-                    <h4>ECG设置</h4>
+                    <h4>心电图设置</h4>
                     <div class="settings-group">
-                        <label class="settings-label">表格颜色</label>
-                        <input type="color" id="ecgGridColor" value="#ffff00">
+                        <label class="settings-label">网格设置</label>
+                        <div class="ecg-grid-controls">
+                            <div class="grid-control-item">
+                                <label class="sub-label">网格颜色</label>
+                                <input type="color" id="ecgGridColor" value="#ffff00" class="color-picker small">
+                            </div>
+                            <div class="grid-control-item">
+                                <label class="sub-label">网格透明度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgGridOpacity" min="0" max="1" value="0.1" step="0.01" class="range-slider">
+                                    <span id="ecgGridOpacityValue" class="range-value">0.1</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="settings-group">
-                        <label class="settings-label">表格明显度</label>
-                        <input type="range" id="ecgGridOpacity" min="0" max="1" value="0.1" step="0.01">
-                        <span id="ecgGridOpacityValue">0.1</span>
+                        <label class="settings-label">波形设置</label>
+                        <div class="wave-control-item">
+                            <label class="sub-label">线条颜色</label>
+                            <input type="color" id="ecgLineColor" value="#ff0033" class="color-picker small">
+                        </div>
+                        <div class="wave-control-item">
+                            <label class="sub-label">线条宽度</label>
+                            <div class="range-control">
+                                <input type="range" id="ecgLineWidth" min="1" max="5" value="2" step="0.5" class="range-slider">
+                                <span id="ecgLineWidthValue" class="range-value">2</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="settings-group">
-                        <label class="settings-label">线条颜色</label>
-                        <input type="color" id="ecgLineColor" value="#ff0033">
+                        <label class="settings-label">波形参数</label>
+                        <div class="wave-params">
+                            <div class="param-item">
+                                <label class="sub-label">P波幅度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgPWave" min="0" max="0.3" value="0.15" step="0.01" class="range-slider">
+                                    <span id="ecgPWaveValue" class="range-value">0.15</span>
+                                </div>
+                            </div>
+                            <div class="param-item">
+                                <label class="sub-label">Q波幅度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgQWave" min="-0.4" max="0" value="-0.1" step="0.01" class="range-slider">
+                                    <span id="ecgQWaveValue" class="range-value">-0.1</span>
+                                </div>
+                            </div>
+                            <div class="param-item">
+                                <label class="sub-label">R波幅度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgRWave" min="0" max="1" value="0.8" step="0.01" class="range-slider">
+                                    <span id="ecgRWaveValue" class="range-value">0.8</span>
+                                </div>
+                            </div>
+                            <div class="param-item">
+                                <label class="sub-label">S波幅度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgSWave" min="-0.4" max="0" value="-0.2" step="0.01" class="range-slider">
+                                    <span id="ecgSWaveValue" class="range-value">-0.2</span>
+                                </div>
+                            </div>
+                            <div class="param-item">
+                                <label class="sub-label">T波幅度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgTWave" min="-0.3" max="0.4" value="0.25" step="0.01" class="range-slider">
+                                    <span id="ecgTWaveValue" class="range-value">0.25</span>
+                                </div>
+                            </div>
+                            <div class="param-item">
+                                <label class="sub-label">抖动强度</label>
+                                <div class="range-control">
+                                    <input type="range" id="ecgJitter" min="0" max="0.3" value="0.05" step="0.01" class="range-slider">
+                                    <span id="ecgJitterValue" class="range-value">0.05</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="settings-group">
-                        <label class="settings-label">线条宽度</label>
-                        <input type="range" id="ecgLineWidth" min="1" max="5" value="2" step="0.5">
-                        <span id="ecgLineWidthValue">2</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">P波幅度</label>
-                        <input type="range" id="ecgPWave" min="0" max="0.3" value="0.15" step="0.01">
-                        <span id="ecgPWaveValue">0.15</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">Q波幅度</label>
-                        <input type="range" id="ecgQWave" min="-0.4" max="0" value="-0.1" step="0.01">
-                        <span id="ecgQWaveValue">-0.1</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">R波幅度</label>
-                        <input type="range" id="ecgRWave" min="0" max="1" value="0.8" step="0.01">
-                        <span id="ecgRWaveValue">0.8</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">S波幅度</label>
-                        <input type="range" id="ecgSWave" min="-0.4" max="0" value="-0.2" step="0.01">
-                        <span id="ecgSWaveValue">-0.2</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">T波幅度</label>
-                        <input type="range" id="ecgTWave" min="-0.3" max="0.4" value="0.25" step="0.01">
-                        <span id="ecgTWaveValue">0.25</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">抖动强度</label>
-                        <input type="range" id="ecgJitter" min="0" max="0.3" value="0.05" step="0.01">
-                        <span id="ecgJitterValue">0.05</span>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">预设</label>
-                        <select id="ecgPreset">
+                        <label class="settings-label">预设模板</label>
+                        <select id="ecgPreset" class="settings-select">
                             <option value="默认" selected>默认</option>
-                            <option value="正常">正常</option>
-                            <option value="心肌梗塞">心肌梗塞</option>
-                            <option value="干扰">干扰</option>
+                            <option value="正常">正常心电图</option>
+                            <option value="心肌梗塞">心肌梗塞模拟</option>
+                            <option value="干扰">干扰信号模拟</option>
                         </select>
                     </div>
                     <div class="settings-group">
-                        <label class="settings-label">效果</label>
-                        <select id="ecgEffect">
+                        <label class="settings-label">显示效果</label>
+                        <select id="ecgEffect" class="settings-select">
                             <option value="标准" selected>标准</option>
                             <option value="科技感">科技感</option>
                             <option value="极简">极简</option>
@@ -276,77 +387,80 @@
                         </select>
                     </div>
                     <div class="settings-group">
-                        <button class="connect-btn" id="ecgRandomBtn">随机生成</button>
+                        <button class="settings-btn primary" id="ecgRandomBtn">随机生成参数</button>
                     </div>
                 </div>
                 
-                <!-- 心率设置 -->
-                <div class="settings-section" id="heart-rate-section" style="display: none;">
-                    <h4>心率设置</h4>
+                <!-- 音频设置 -->
+                <div class="settings-section" id="audio-section" style="display: none;">
+                    <h4>音频设置</h4>
                     <div class="settings-group">
-                        <label class="settings-label">显示位置</label>
-                        <select id="heartRatePosition">
-                            <option value="center">居中</option>
-                            <option value="top">顶部</option>
-                            <option value="bottom">底部</option>
-                            <option value="left" selected>左侧</option>
-                            <option value="right">右侧</option>
-                        </select>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">显示样式</label>
-                        <select id="heartRateStyle">
-                            <option value="digital" selected>数字</option>
-                            <option value="analog">模拟</option>
-                            <option value="3d">3D</option>
-                            <option value="pulse">脉冲</option>
-                        </select>
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">显示颜色</label>
-                        <input type="color" id="heartRateColor" value="#ff0033">
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">字体大小</label>
-                        <input type="range" id="heartRateSize" min="40" max="200" value="100" step="10">
-                    </div>
-                </div>
-                
-                <!-- 主题设置 -->
-                <div class="settings-section" id="theme-section" style="display: none;">
-                    <h4>主题设置</h4>
-                    <div class="settings-group">
-                        <label class="settings-label">主题颜色</label>
-                        <input type="color" id="themeColor" value="#ff0033">
-                    </div>
-                    <div class="settings-group">
-                        <label class="settings-label">辅助颜色</label>
-                        <input type="color" id="secondaryColor" value="#ffffff">
-                    </div>
-                    <div class="settings-group">
-                        <label class="module-log-item">
-                            <input type="checkbox" id="footerToggle" checked>
-                            <span>显示详细信息栏</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="audioToggleSetting" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">启用音效</span>
                         </label>
                     </div>
+                    <div class="settings-group">
+                        <label class="settings-label">音效类型</label>
+                        <select class="settings-select">
+                            <option value="standard" selected>标准心跳声</option>
+                            <option value="digital">数字音效</option>
+                            <option value="ambient">环境音效</option>
+                            <option value="none">静音</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">音量</label>
+                        <div class="range-control">
+                            <input type="range" min="0" max="100" value="70" step="5" class="range-slider">
+                            <span class="range-value">70%</span>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- 日志设置 -->
-                <div class="settings-section" id="logs-section" style="display: none;">
-                    <h4>日志设置</h4>
+                <!-- 系统设置 -->
+                <div class="settings-section" id="system-section" style="display: none;">
+                    <h4>系统设置</h4>
                     <div class="settings-group">
                         <label class="settings-label">日志级别</label>
-                        <select id="logLevelSelect">
+                        <select id="logLevelSelect" class="settings-select">
                             <option value="none">关闭</option>
                             <option value="basic" selected>基本</option>
                             <option value="detailed">详细</option>
                         </select>
                     </div>
                     <div class="settings-group">
-                        <label class="module-log-item">
+                        <label class="toggle-switch">
                             <input type="checkbox" id="logDisplay">
-                            <span>显示日志面板</span>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">显示日志面板</span>
                         </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">启用心率警报</span>
+                        </label>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">心率警报阈值</label>
+                        <div class="threshold-controls">
+                            <div class="threshold-item">
+                                <label class="sub-label">最低心率</label>
+                                <input type="number" min="30" max="200" value="50" class="number-input">
+                                <span>次/分</span>
+                            </div>
+                            <div class="threshold-item">
+                                <label class="sub-label">最高心率</label>
+                                <input type="number" min="30" max="200" value="180" class="number-input">
+                                <span>次/分</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <button class="settings-btn danger">重置所有设置</button>
                     </div>
                 </div>
             </div>

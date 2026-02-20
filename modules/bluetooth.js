@@ -203,7 +203,8 @@ function onDisconnected(updateStatus, onUpdateHeartRate, updateConnectButtons, l
     updateConnectButtons('连接设备', false);
     connected = false;
     if (window.statusDot) window.statusDot.classList.remove('connected');
-    stopAlarm();
+    // 断开连接后不停止报警，因为手表取下来没有数据时应该一直报警
+    // stopAlarm();
     // 断开后心电图立即恢复为直线
     clearECGToZero();
     log(LOG_MODULES.BLUETOOTH, '断开连接处理完成', 'detailed');

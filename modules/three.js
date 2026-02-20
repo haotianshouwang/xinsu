@@ -14,7 +14,7 @@ let canvasContainer = null;
 // 粒子效果配置
 let particleConfig = {
     效果: '标准',
-    颜色: '#ff0033',
+    color: '#ff0033',
     数量: 2000,
     大小: 0.5
 };

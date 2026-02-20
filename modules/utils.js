@@ -81,6 +81,7 @@ export function getDOMElements() {
         connectionStatus: document.getElementById('connection-status'),
         soundToggle: document.getElementById('soundToggle'),
         audioToggle: document.getElementById('audioToggle'),
+        audioToggleSetting: document.getElementById('audioToggleSetting'),
         canvasContainer: document.getElementById('canvas-container'),
         debugContent: document.getElementById('debugContent'),
         debugCount: document.getElementById('debugCount'),

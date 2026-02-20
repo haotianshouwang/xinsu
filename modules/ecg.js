@@ -239,19 +239,7 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     
     ecgCtx.clearRect(0, 0, width, height);
     
-    // 绘制网格（如果样式配置要求）
-    if (styleConfig.grid) {
-        // 使用配置的网格颜色和透明度
-        const gridColor = config.gridColor || '#ffff00';
-        const gridOpacity = config.gridOpacity || 0.1;
-        ecgCtx.strokeStyle = gridColor.replace(/[^0-9a-f]/gi, '') + Math.round(gridOpacity * 255).toString(16).padStart(2, '0');
-        ecgCtx.lineWidth = 1;
-        ecgCtx.beginPath();
-        const gridSize = styleConfig.gridSize;
-        for(let x=0; x<width; x+=gridSize) { ecgCtx.moveTo(x,0); ecgCtx.lineTo(x, height); }
-        for(let y=0; y<height; y+=gridSize) { ecgCtx.moveTo(0,y); ecgCtx.lineTo(width, y); }
-        ecgCtx.stroke();
-    }
+    // 网格已通过CSS在.ecg-grid div中实现，不再在canvas上绘制重复网格
     
     // 中线
     ecgCtx.strokeStyle = 'rgba(255, 26, 26, 0.1)';

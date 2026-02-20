@@ -26,6 +26,25 @@ let isNightModeBackground = false; // 标记是否为黑夜模式背景
 // DOM元素
 let elements = {};
 
+// 工具函数：将十六进制颜色转换为RGB
+function hexToRgb(hex) {
+    // 移除#号
+    hex = hex.replace(/^#/, '');
+    
+    // 处理缩写形式
+    if (hex.length === 3) {
+        hex = hex.split('').map(char => char + char).join('');
+    }
+    
+    // 解析RGB值
+    const bigint = parseInt(hex, 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    
+    return { r, g, b };
+}
+
 // 更新心率显示位置
 function updateHeartRatePosition(position) {
     const heartRateSection = document.querySelector('.heart-rate-section');
@@ -136,10 +155,16 @@ function init() {
     );
     
     // 声音开关交互
-    [elements.soundToggle, elements.audioToggle].forEach(toggle => {
+    [elements.soundToggle, elements.audioToggle, elements.audioToggleSetting].forEach(toggle => {
         if (toggle) {
             toggle.addEventListener('change', (e) => {
-                setAudioEnabled(e.target.checked);
+                const isEnabled = e.target.checked;
+                setAudioEnabled(isEnabled);
+                
+                // 同步所有音频开关状态
+                if (elements.soundToggle) elements.soundToggle.checked = isEnabled;
+                if (elements.audioToggle) elements.audioToggle.checked = isEnabled;
+                if (elements.audioToggleSetting) elements.audioToggleSetting.checked = isEnabled;
             });
         }
     });
@@ -165,14 +190,22 @@ function animate(time) {
     
     // ECG 数据更新
     let ecgValue = 0;
-    if (getConnected() && getCurrentBPM() !== null && getCurrentBPM() > 0) {
+    const hasData = getCurrentBPM() !== null && getCurrentBPM() > 0;
+    
+    if (hasData) {
         ecgPhase += 0.016 * (getCurrentBPM() / 60);
         ecgValue = generateECGValue(ecgPhase, getCurrentBPM());
+        addECGDataPoint(ecgValue);
+    } else {
+        // 没有数据时，清空ECG数据并添加多个0值，确保画直线
+        if (ecgData.length > 0 && ecgData.some(val => val !== 0)) {
+            clearECGToZero();
+        }
+        addECGDataPoint(0);
     }
-    addECGDataPoint(ecgValue);
     
-    // 心跳检测
-    if (ecgValue > 0.6 && t - getLastBeatTime() > 0.5) {
+    // 心跳检测：只在有数据且不在报警状态时播放心跳声
+    if (hasData && !getIsAlarming() && ecgValue > 0.6 && t - getLastBeatTime() > 0.5) {
         setLastBeatTime(t);
         setPulseIntensity(1);
         
@@ -188,9 +221,17 @@ function animate(time) {
     // 脉冲衰减
     setPulseIntensity(getPulseIntensity() * 0.95);
     
-    // 警报检测（连接状态但5秒无数据）
-    if (getConnected() && t - getLastDataTime() > 5) {
+    // 警报检测：只有设备连接时才报警
+    const hasRecentData = t - getLastDataTime() <= 5;
+    const isConnected = getConnected();
+    
+    if (isConnected && (!hasData || !hasRecentData)) {
         startAlarm(elements.alarmOverlay, elements.statusDot, elements.heartRateEl, (type, data, highlight) => logDebug(elements.debugContent, elements.debugCount, type, data, highlight));
+        
+        // 当没有数据或数据过时，更新心率显示为"--"
+        if (elements.bpmDisplay && (elements.bpmDisplay.textContent !== '--' && elements.bpmDisplay.textContent !== '0')) {
+            updateBluetoothHeartRate(elements.bpmDisplay, elements.heartRateEl, '--');
+        }
     } else {
         stopAlarm(elements.alarmOverlay, elements.statusDot, elements.heartRateEl, (type, data, highlight) => logDebug(elements.debugContent, elements.debugCount, type, data, highlight));
     }
@@ -231,6 +272,9 @@ function handleToggleStyle() {
     }
     if (elements.audioToggle) {
         elements.audioToggle.checked = audioEnabled;
+    }
+    if (elements.audioToggleSetting) {
+        elements.audioToggleSetting.checked = audioEnabled;
     }
     
     // 重新获取DOM元素
@@ -355,7 +399,7 @@ function setupSettings() {
                 item.classList.add('active');
                 
                 // 显示对应的设置部分
-                const sections = ['interface', 'background', 'effects', 'ecg', 'heart-rate', 'theme', 'logs'];
+                const sections = ['appearance', 'display', 'effects', 'heart-rate', 'ecg', 'audio', 'system'];
                 sections.forEach(s => {
                     const sectionElement = document.getElementById(`${s}-section`);
                     if (sectionElement) {
@@ -366,14 +410,13 @@ function setupSettings() {
         });
     });
     
-    // 绑定白天/黑夜模式切换事件
-    if (darkModeToggle) {
-        // 初始化darkModeToggle状态
-        darkModeToggle.checked = currentMode === 'dark';
-        
-        darkModeToggle.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                // 进入黑夜模式
+    // 绑定主题模式切换事件
+    const themeModeRadios = document.querySelectorAll('input[name="theme-mode"]');
+    themeModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const mode = e.target.value;
+            if (mode === 'dark') {
+                // 进入深色模式
                 document.body.classList.remove('light-mode');
                 document.body.classList.add('dark-mode');
                 currentMode = 'dark';
@@ -383,7 +426,7 @@ function setupSettings() {
                     originalBgType = currentBgType;
                     originalBgImage = currentBgImage;
                     originalBgColor = currentBgColor;
-                    console.log('进入黑夜模式 - 保存原始背景:', { originalBgType, originalBgImage, originalBgColor });
+                    console.log('进入深色模式 - 保存原始背景:', { originalBgType, originalBgImage, originalBgColor });
                 }
                 
                 // 切换到黑色背景
@@ -392,22 +435,12 @@ function setupSettings() {
                 document.body.style.background = currentBgColor;
                 updateBackgroundColor(currentBgColor);
                 isNightModeBackground = true;
-                console.log('进入黑夜模式 - 应用黑色背景');
+                console.log('进入深色模式 - 应用黑色背景');
                 
                 // 更新背景类型选择器
-                const bgTypeSelect = document.getElementById('bgTypeSelect');
-                if (bgTypeSelect) {
-                    bgTypeSelect.value = currentBgType;
-                    // 显示或隐藏对应的设置项
-                    const bgColorGroup = document.querySelector('.bg-color-group');
-                    const bgImageGroup = document.querySelector('.bg-image-group');
-                    if (bgColorGroup && bgImageGroup) {
-                        bgColorGroup.style.display = 'block';
-                        bgImageGroup.style.display = 'none';
-                    }
-                }
-            } else {
-                // 退出黑夜模式，恢复原始设置
+                updateBgTypeUI('color');
+            } else if (mode === 'light') {
+                // 进入浅色模式
                 document.body.classList.remove('dark-mode');
                 document.body.classList.add('light-mode');
                 currentMode = 'light';
@@ -417,147 +450,303 @@ function setupSettings() {
                 currentBgImage = originalBgImage;
                 currentBgColor = originalBgColor;
                 isNightModeBackground = false;
-                console.log('退出黑夜模式 - 恢复原始背景:', { currentBgType, currentBgImage, currentBgColor });
+                console.log('进入浅色模式 - 恢复原始背景:', { currentBgType, currentBgImage, currentBgColor });
                 
                 // 重新应用原始背景
                 if (currentBgType === 'image' && currentBgImage) {
                     document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
-                    console.log('退出黑夜模式 - 应用图片背景:', currentBgImage);
+                    console.log('进入浅色模式 - 应用图片背景:', currentBgImage);
                 } else if (currentBgType === 'color') {
                     document.body.style.background = currentBgColor;
-                    console.log('退出黑夜模式 - 应用颜色背景:', currentBgColor);
+                    console.log('进入浅色模式 - 应用颜色背景:', currentBgColor);
                 }
                 
                 // 更新Three.js背景
                 updateBackgroundColor();
                 
                 // 更新背景类型选择器
-                const bgTypeSelect = document.getElementById('bgTypeSelect');
-                if (bgTypeSelect) {
-                    bgTypeSelect.value = currentBgType;
-                    // 显示或隐藏对应的设置项
-                    const bgColorGroup = document.querySelector('.bg-color-group');
-                    const bgImageGroup = document.querySelector('.bg-image-group');
-                    if (bgColorGroup && bgImageGroup) {
-                        if (currentBgType === 'color') {
-                            bgColorGroup.style.display = 'block';
-                            bgImageGroup.style.display = 'none';
-                        } else {
-                            bgColorGroup.style.display = 'none';
-                            bgImageGroup.style.display = 'block';
-                        }
-                    }
+                updateBgTypeUI(currentBgType);
+            } else if (mode === 'auto') {
+                // 自动模式：根据系统设置
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    document.body.classList.remove('light-mode');
+                    document.body.classList.add('dark-mode');
+                    currentMode = 'dark';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    document.body.classList.add('light-mode');
+                    currentMode = 'light';
                 }
+                console.log('自动模式 - 当前模式:', currentMode);
             }
             // 同步按钮UI
             updateButtonUI();
         });
+    });
+    
+    // 绑定背景类型选择事件
+    const bgTypeRadios = document.querySelectorAll('input[name="bg-type"]');
+    bgTypeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const bgType = e.target.value;
+            currentBgType = bgType;
+            // 更新原始背景设置（无论当前模式如何）
+            originalBgType = bgType;
+            updateBgTypeUI(bgType);
+        });
+    });
+    
+    // 更新背景类型UI
+    function updateBgTypeUI(bgType) {
+        const bgColorGroup = document.querySelector('.bg-color-group');
+        const bgImageGroup = document.querySelector('.bg-image-group');
+        const bgTypeRadios = document.querySelectorAll('input[name="bg-type"]');
+        
+        // 更新radio按钮状态
+        bgTypeRadios.forEach(radio => {
+            radio.checked = radio.value === bgType;
+        });
+        
+        // 显示或隐藏对应的设置项
+        if (bgColorGroup && bgImageGroup) {
+            if (bgType === 'color') {
+                bgColorGroup.style.display = 'block';
+                bgImageGroup.style.display = 'none';
+                // 设置纯色背景
+                if (!isNightModeBackground) {
+                    document.body.style.background = currentBgColor;
+                    updateBackgroundColor(currentBgColor);
+                }
+            } else {
+                bgColorGroup.style.display = 'none';
+                bgImageGroup.style.display = 'block';
+                // 设置图片背景
+                if (!isNightModeBackground && currentBgImage) {
+                    document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
+                }
+            }
+        }
     }
     
-    // 绑定界面样式选择事件 - 现在始终使用style1
-    interfaceOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            const style = option.dataset.style;
-            if (style) {
-                // 移除所有选项的选中状态
-                interfaceOptions.forEach(opt => opt.classList.remove('selected'));
-                // 只选中style1选项
-                const style1Option = document.querySelector('.interface-option[data-style="style1"]');
-                if (style1Option) {
-                    style1Option.classList.add('selected');
+    // 绑定心率显示位置切换事件
+    const hrPositionRadios = document.querySelectorAll('input[name="hr-position"]');
+    hrPositionRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const position = e.target.value;
+            updateHeartRatePosition(position);
+        });
+    });
+    
+    // 绑定心率显示样式切换事件
+    const hrStyleRadios = document.querySelectorAll('input[name="hr-style"]');
+    hrStyleRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const style = e.target.value;
+            updateHeartRateStyle(style);
+        });
+    });
+    
+    // 绑定颜色预设点击事件
+    const colorPresets = document.querySelectorAll('.color-preset');
+    colorPresets.forEach(preset => {
+        // 设置预设按钮的背景颜色
+        const color = preset.dataset.color;
+        preset.style.backgroundColor = color;
+        
+        preset.addEventListener('click', () => {
+            const themeColorInput = document.getElementById('themeColor');
+            if (themeColorInput) {
+                themeColorInput.value = color;
+                document.body.style.setProperty('--accent', color);
+                
+                // 转换颜色为RGB格式，用于rgba()函数
+                const rgbColor = hexToRgb(color);
+                if (rgbColor) {
+                    document.body.style.setProperty('--accent-rgb', `${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}`);
                 }
-                // 确保始终使用style1
-                currentStyle = 'style1';
-                // 重置粒子系统
-                resetParticles(currentStyle);
-                // 重新初始化ECG
-                initECG(currentStyle);
-                // 更新ECG画布
-                updateECGCanvas();
-                // 处理窗口大小调整
-                onWindowResize();
-                // 同步按钮UI
-                updateButtonUI();
+                
+                // 更新粒子效果颜色
+                if (window.setParticleColor) {
+                    window.setParticleColor(color);
+                }
             }
         });
     });
     
-    // 更新按钮UI函数
-    function updateButtonUI() {
-        const buttons = document.querySelectorAll('.connect-btn');
-        buttons.forEach(button => {
-            button.style.background = 'transparent';
-            button.style.border = '1px solid var(--accent)';
-            button.style.color = 'var(--fg)';
-        });
-        
-        // 确保所有UI元素都使用正确的CSS变量
-        const uiElements = document.querySelectorAll('.sound-control, .status-indicator, .logo');
-        uiElements.forEach(element => {
-            // 移除任何内联样式，让CSS变量生效
-            element.style.color = '';
-            element.style.background = '';
+    // 绑定范围滑块值显示事件
+    const rangeSliders = document.querySelectorAll('.range-slider');
+    rangeSliders.forEach(slider => {
+        const valueDisplay = slider.nextElementSibling;
+        if (valueDisplay && valueDisplay.classList.contains('range-value')) {
+            slider.addEventListener('input', (e) => {
+                valueDisplay.textContent = e.target.value;
+            });
+        }
+    });
+    
+    // 绑定重置设置按钮事件
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener('click', () => {
+            if (confirm('确定要重置所有设置为默认值吗？')) {
+                // 重置主题模式
+                document.getElementById('theme-light').checked = true;
+                document.body.classList.remove('dark-mode');
+                document.body.classList.add('light-mode');
+                currentMode = 'light';
+                
+                // 重置背景设置
+                currentBgType = 'image';
+                currentBgImage = 'images/bg1.jpg';
+                currentBgColor = '#000000';
+                originalBgType = 'image';
+                originalBgImage = 'images/bg1.jpg';
+                originalBgColor = '#000000';
+                isNightModeBackground = false;
+                document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
+                updateBackgroundColor();
+                updateBgTypeUI('image');
+                
+                // 重置主题颜色
+                const themeColorInput = document.getElementById('themeColor');
+                if (themeColorInput) {
+                    themeColorInput.value = '#ff0033';
+                    document.body.style.setProperty('--accent', '#ff0033');
+                    document.body.style.setProperty('--accent-rgb', '255, 0, 51');
+                    
+                    // 重置粒子效果颜色
+                    if (window.setParticleColor) {
+                        window.setParticleColor('#ff0033');
+                    }
+                }
+                
+                // 重置心率设置
+                const hrPositionRadios = document.querySelectorAll('input[name="hr-position"]');
+                hrPositionRadios.forEach(radio => {
+                    radio.checked = radio.value === 'left';
+                });
+                updateHeartRatePosition('left');
+                
+                const hrStyleRadios = document.querySelectorAll('input[name="hr-style"]');
+                hrStyleRadios.forEach(radio => {
+                    radio.checked = radio.value === 'digital';
+                });
+                updateHeartRateStyle('digital');
+                
+                // 重置音频设置
+                const audioToggle = document.getElementById('audioToggle');
+                const audioToggleSetting = document.getElementById('audioToggleSetting');
+                if (audioToggle) {
+                    audioToggle.checked = true;
+                }
+                if (audioToggleSetting) {
+                    audioToggleSetting.checked = true;
+                }
+                setAudioEnabled(true);
+                
+                // 重置系统设置
+                const logLevelSelect = document.getElementById('logLevelSelect');
+                if (logLevelSelect) {
+                    logLevelSelect.value = 'basic';
+                    setLogLevel('basic');
+                }
+                
+                const logDisplayCheckbox = document.getElementById('logDisplay');
+                if (logDisplayCheckbox) {
+                    logDisplayCheckbox.checked = false;
+                    const logPanel = document.getElementById('log-panel');
+                    if (logPanel) {
+                        logPanel.style.display = 'none';
+                    }
+                }
+                
+                // 重置ECG设置
+                setEcgConfig({ 预设: '默认' });
+                
+                console.log('所有设置已重置为默认值');
+            }
         });
     }
     
-    // 初始化按钮UI
-    updateButtonUI();
+    // 更新按钮UI函数
+    function updateButtonUI() {
+        // 按钮样式现在由CSS变量控制，无需内联样式
+    }
     
-    // 初始化背景设置
-    if (bgTypeSelect) {
-        // 设置默认背景类型
-        bgTypeSelect.value = currentBgType;
-        // 显示或隐藏对应的设置项
-        const bgColorGroup = document.querySelector('.bg-color-group');
-        const bgImageGroup = document.querySelector('.bg-image-group');
-        if (bgColorGroup && bgImageGroup) {
-            if (currentBgType === 'color') {
-                bgColorGroup.style.display = 'block';
-                bgImageGroup.style.display = 'none';
-            } else {
-                bgColorGroup.style.display = 'none';
-                bgImageGroup.style.display = 'block';
+    // 初始化主题模式
+    function initThemeMode() {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            document.getElementById('theme-dark').checked = true;
+            document.body.classList.remove('light-mode');
+            document.body.classList.add('dark-mode');
+            currentMode = 'dark';
+        } else {
+            document.getElementById('theme-light').checked = true;
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+            currentMode = 'light';
+        }
+    }
+    
+    // 初始化心率位置
+    function initHeartRateSettings() {
+        const hrPositionRadios = document.querySelectorAll('input[name="hr-position"]');
+        hrPositionRadios.forEach(radio => {
+            radio.checked = radio.value === 'left';
+        });
+        updateHeartRatePosition('left');
+        
+        const hrStyleRadios = document.querySelectorAll('input[name="hr-style"]');
+        hrStyleRadios.forEach(radio => {
+            radio.checked = radio.value === 'digital';
+        });
+        updateHeartRateStyle('digital');
+    }
+    
+    // 初始化设置
+    function initSettings() {
+        // 初始化主题模式
+        initThemeMode();
+        
+        // 初始化背景设置
+        updateBgTypeUI(currentBgType);
+        
+        // 初始化心率设置
+        initHeartRateSettings();
+        
+        // 初始化主题颜色
+        const themeColorInput = document.getElementById('themeColor');
+        if (themeColorInput) {
+            themeColorInput.value = '#ff0033';
+            document.body.style.setProperty('--accent', '#ff0033');
+            // 初始化RGB值
+            document.body.style.setProperty('--accent-rgb', '255, 0, 51');
+            
+            // 初始化粒子效果颜色
+            if (window.setParticleColor) {
+                window.setParticleColor('#ff0033');
             }
         }
         
-        // 绑定背景类型选择事件
-        bgTypeSelect.addEventListener('change', (e) => {
-            currentBgType = e.target.value;
-            // 更新原始背景设置（无论当前模式如何）
-            originalBgType = currentBgType;
-            // 显示或隐藏对应的设置项
-            const bgColorGroup = document.querySelector('.bg-color-group');
-            const bgImageGroup = document.querySelector('.bg-image-group');
-            if (bgColorGroup && bgImageGroup) {
-                if (currentBgType === 'color') {
-                    bgColorGroup.style.display = 'block';
-                    bgImageGroup.style.display = 'none';
-                    // 设置纯色背景
-                    document.body.style.background = currentBgColor;
-                    updateBackgroundColor(currentBgColor);
-                } else {
-                    bgColorGroup.style.display = 'none';
-                    bgImageGroup.style.display = 'block';
-                    // 设置图片背景
-                    if (currentBgImage) {
-                        document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
-                    } else {
-                        // 如果没有选择图片，使用默认图片
-                        currentBgImage = 'images/bg1.jpg';
-                        document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
-                    }
-                }
-            }
-        });
+        // 初始化音频设置
+        const audioToggle = document.getElementById('audioToggle');
+        const audioToggleSetting = document.getElementById('audioToggleSetting');
+        if (audioToggle) {
+            audioToggle.checked = true;
+        }
+        if (audioToggleSetting) {
+            audioToggleSetting.checked = true;
+        }
+        setAudioEnabled(true);
     }
+    
+    // 初始化设置
+    initSettings();
     
     // 初始化本地图片选择器
     initLocalImageSelector();
-    
-    // 设置默认本地图片
-    if (bgLocalImageSelect) {
-        bgLocalImageSelect.value = currentBgImage;
-    }
     
     // 绑定背景颜色选择事件
     if (bgColorPicker) {
@@ -1017,7 +1206,6 @@ function setupSettings() {
     
     // 绑定主题设置事件
     const themeColor = document.getElementById('themeColor');
-    const secondaryColor = document.getElementById('secondaryColor');
     const footerToggle = document.getElementById('footerToggle');
     
     if (themeColor) {
@@ -1025,16 +1213,18 @@ function setupSettings() {
             // 这里可以添加主题颜色的逻辑
             console.log('主题颜色:', e.target.value);
             // 更新CSS变量
-            document.documentElement.style.setProperty('--accent', e.target.value);
-        });
-    }
-    
-    if (secondaryColor) {
-        secondaryColor.addEventListener('change', (e) => {
-            // 这里可以添加辅助颜色的逻辑
-            console.log('辅助颜色:', e.target.value);
-            // 更新CSS变量
-            document.documentElement.style.setProperty('--fg', e.target.value);
+            document.body.style.setProperty('--accent', e.target.value);
+            
+            // 转换颜色为RGB格式，用于rgba()函数
+            const rgbColor = hexToRgb(e.target.value);
+            if (rgbColor) {
+                document.body.style.setProperty('--accent-rgb', `${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}`);
+            }
+            
+            // 更新粒子效果颜色
+            if (window.setParticleColor) {
+                window.setParticleColor(e.target.value);
+            }
         });
     }
     
@@ -1312,6 +1502,12 @@ window.toggleStyle = handleToggleStyle;
 
 // 将其他需要的函数暴露到全局作用域
 window.setupSettings = setupSettings;
+
+// 将Three.js模块函数暴露到全局
+window.setParticleEffect = setParticleEffect;
+window.setParticleColor = setParticleColor;
+window.setParticleCount = setParticleCount;
+window.setParticleSize = setParticleSize;
 
 // 启动初始化 - 确保DOM完全加载后再执行
 document.addEventListener('DOMContentLoaded', () => {
