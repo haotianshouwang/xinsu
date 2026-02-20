@@ -2113,6 +2113,50 @@ body.dark-mode .range-slider:hover {
     letter-spacing: 1px;
 }
 
+.settings-select.short {
+    width: 200px;
+}
+
+/* 粒子效果容器 */
+.particle-effect-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* 粒子效果预览 */
+.particle-preview {
+    flex: 1;
+    min-width: 300px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card);
+}
+
+.preview-label {
+    padding: 10px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.preview-container {
+    width: 100%;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(10, 10, 10, 0.9) 100%);
+    min-width: 300px;
+    min-height: 200px;
+    display: block;
+}
+
 body.dark-mode .settings-select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }

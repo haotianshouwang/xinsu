@@ -593,7 +593,8 @@ function createFirefliesEffect(count) {
     const colors = new Float32Array(count * 3);
     const flicker = new Float32Array(count);
     
-    const color = new THREE.Color(0xffff00);
+    // 使用粒子配置中的颜色，如果没有则使用黄色
+    const color = new THREE.Color(particleConfig.color || 0xffff00);
     
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 150;
@@ -653,6 +654,7 @@ function createFirefliesEffect(count) {
             varying vec3 vColor;
             varying float vFlicker;
             varying float vPulse;
+            uniform float uTime;
             
             void main() {
                 float dist = length(gl_PointCoord - vec2(0.5));
@@ -775,7 +777,8 @@ function createBlizzardEffect(count) {
     const colors = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     
-    const color = new THREE.Color(0xffffff);
+    // 使用粒子配置中的颜色，如果没有则使用白色
+    const color = new THREE.Color(particleConfig.color || 0xffffff);
     
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 200;
@@ -822,12 +825,9 @@ function createBlizzardEffect(count) {
                 vec3 velocity = aVelocity * (1.0 + uPulse * 0.5);
                 pos += velocity * uTime;
                 
-                // 雪花循环
-                if (pos.y < -100.0) {
-                    pos.y += 200.0;
-                    pos.x = (Math.random() - 0.5) * 200.0;
-                    pos.z = (Math.random() - 0.5) * 200.0;
-                }
+                // 雪花循环 - 使用数学方法避免if语句
+                float yOffset = floor((pos.y + 100.0) / 200.0);
+                pos.y -= yOffset * 200.0;
                 
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 gl_PointSize = size * (180.0 / -mvPosition.z) * (1.0 + uPulse * 0.3);
@@ -1158,11 +1158,11 @@ function updateThree(time, pulseIntensity) {
     // 更新星星和粒子
     if (stars) {
         if (stars.material.uniforms) {
-            // 样式2的粒子系统（ShaderMaterial）
+            // ShaderMaterial材质（所有粒子效果）
             stars.material.uniforms.uTime.value = t;
             stars.material.uniforms.uPulse.value = pulse;
         } else if (stars.material instanceof THREE.PointsMaterial) {
-            // 样式1的粒子系统（PointsMaterial）
+            // PointsMaterial材质（旧样式）
             // 应用缩放效果
             const scale = 1 + (pulse * 0.3);
             stars.scale.set(scale, scale, scale);

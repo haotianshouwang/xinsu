@@ -329,6 +329,12 @@ function setupSettings() {
     function showSettings() {
         if (settingsPanel) {
             settingsPanel.classList.add('show');
+            // 延迟一下确保DOM已经更新，然后重新初始化预览窗口
+            setTimeout(() => {
+                console.log('设置面板显示，重新初始化预览窗口');
+                // 每次显示设置面板时都重新初始化预览窗口，确保canvas尺寸正确
+                initPreviewWindow();
+            }, 100);
         }
     }
     
@@ -946,6 +952,8 @@ function setupSettings() {
             // 这里可以添加粒子效果选择的逻辑
             console.log('粒子效果:', e.target.value);
             setParticleEffect(e.target.value);
+            // 更新预览窗口效果
+            updatePreviewEffect(e.target.value);
         });
     }
     
@@ -990,6 +998,26 @@ function setupSettings() {
             // 这里可以添加粒子大小的逻辑
             console.log('粒子大小:', e.target.value);
             setParticleSize(parseFloat(e.target.value));
+            // 更新输入框的值
+            const particlesSizeInput = document.getElementById('particlesSizeInput');
+            if (particlesSizeInput) {
+                particlesSizeInput.value = e.target.value;
+            }
+        });
+    }
+    
+    // 绑定粒子大小输入框事件
+    const particlesSizeInput = document.getElementById('particlesSizeInput');
+    if (particlesSizeInput) {
+        particlesSizeInput.addEventListener('input', (e) => {
+            // 这里可以添加粒子大小的逻辑
+            console.log('粒子大小:', e.target.value);
+            setParticleSize(parseFloat(e.target.value));
+            // 更新滑块的值
+            const particlesSize = document.getElementById('particlesSize');
+            if (particlesSize) {
+                particlesSize.value = e.target.value;
+            }
         });
     }
     
@@ -1509,8 +1537,813 @@ window.setParticleColor = setParticleColor;
 window.setParticleCount = setParticleCount;
 window.setParticleSize = setParticleSize;
 
+// 预览窗口的Three.js场景
+let previewScene = null;
+let previewCamera = null;
+let previewRenderer = null;
+let previewParticles = null;
+
+// 初始化预览窗口
+function initPreviewWindow() {
+    console.log('初始化预览窗口开始');
+    const previewContainer = document.getElementById('previewContainer');
+    if (!previewContainer) {
+        console.error('预览容器不存在');
+        return;
+    }
+    console.log('预览容器找到:', previewContainer);
+    
+    // 创建场景
+    previewScene = new THREE.Scene();
+    console.log('场景创建:', previewScene);
+    
+    // 创建相机
+    let aspect = previewContainer.clientWidth / previewContainer.clientHeight;
+    // 确保aspect不为0或NaN
+    if (!aspect || isNaN(aspect)) {
+        aspect = 1;
+        console.warn('预览容器尺寸无效，使用默认aspect ratio 1');
+    }
+    console.log('预览容器尺寸:', previewContainer.clientWidth, 'x', previewContainer.clientHeight, 'aspect:', aspect);
+    previewCamera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+    previewCamera.position.z = 50;
+    console.log('相机创建:', previewCamera);
+    
+    try {
+        // 创建渲染器
+        previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        console.log('渲染器创建:', previewRenderer);
+        
+        // 确保渲染器尺寸不为0
+        let width = previewContainer.clientWidth || 300;
+        let height = previewContainer.clientHeight || 200;
+        console.log('渲染器实际尺寸:', width, 'x', height);
+        previewRenderer.setSize(width, height);
+        previewRenderer.setClearColor(0x000000, 0);
+        console.log('渲染器尺寸设置完成');
+        
+        // 强制更新相机aspect ratio
+        if (width > 0 && height > 0) {
+            previewCamera.aspect = width / height;
+            previewCamera.updateProjectionMatrix();
+            console.log('相机aspect ratio更新:', previewCamera.aspect);
+        }
+        
+        // 清除容器并添加渲染器
+        previewContainer.innerHTML = '';
+        const canvas = previewRenderer.domElement;
+        // 确保canvas始终有正确的样式，即使容器尺寸为0
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.zIndex = '1';
+        // 强制设置canvas的最小尺寸，确保即使容器隐藏时也能渲染
+        canvas.style.minWidth = '300px';
+        canvas.style.minHeight = '200px';
+        previewContainer.appendChild(canvas);
+        console.log('渲染器DOM元素添加完成，canvas:', canvas);
+        console.log('previewContainer现在的子元素数量:', previewContainer.children.length);
+        console.log('previewContainer计算样式:', window.getComputedStyle(previewContainer));
+        console.log('canvas计算样式:', window.getComputedStyle(canvas));
+        
+        // 初始创建粒子效果，使用当前选择的效果
+        console.log('开始创建预览效果');
+        const particlesEffectSelect = document.getElementById('particlesEffect');
+        const currentEffect = particlesEffectSelect ? particlesEffectSelect.value : '标准';
+        updatePreviewEffect(currentEffect);
+        console.log('预览效果创建完成');
+        console.log('当前粒子效果:', currentEffect);
+        
+        // 开始渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (previewParticles && previewParticles.material.uniforms) {
+                previewParticles.material.uniforms.uTime.value += 0.01;
+            }
+            
+            previewRenderer.render(previewScene, previewCamera);
+        }
+        
+        animate();
+        console.log('渲染循环开始');
+        
+        // 窗口大小变化时更新
+        window.addEventListener('resize', () => {
+            if (!previewCamera || !previewRenderer || !previewContainer) return;
+            
+            previewCamera.aspect = previewContainer.clientWidth / previewContainer.clientHeight;
+            previewCamera.updateProjectionMatrix();
+            previewRenderer.setSize(previewContainer.clientWidth, previewContainer.clientHeight);
+        });
+        
+        console.log('预览窗口初始化完成');
+    } catch (error) {
+        console.error('预览窗口初始化错误:', error);
+    }
+}
+
+// 更新预览效果
+function updatePreviewEffect(effectType) {
+    console.log('更新预览效果:', effectType);
+    if (!previewScene) {
+        console.error('预览场景不存在');
+        return;
+    }
+    
+    // 移除现有的粒子
+    if (previewParticles) {
+        console.log('移除现有粒子');
+        previewScene.remove(previewParticles);
+        previewParticles.geometry.dispose();
+        previewParticles.material.dispose();
+        previewParticles = null;
+        console.log('现有粒子移除完成');
+    }
+    
+    // 创建新的粒子效果
+    const particleCount = 500; // 预览用较少的粒子数量以提高性能
+    console.log('开始创建新效果，粒子数量:', particleCount);
+    
+    try {
+        switch (effectType) {
+            case '星云':
+                console.log('创建星云效果');
+                previewParticles = createPreviewNebulaEffect(particleCount);
+                break;
+            case '脉冲':
+                console.log('创建脉冲效果');
+                previewParticles = createPreviewPulseEffect(particleCount);
+                break;
+            case '波浪':
+                console.log('创建波浪效果');
+                previewParticles = createPreviewWaveEffect(particleCount);
+                break;
+            case '银河':
+                console.log('创建银河效果');
+                previewParticles = createPreviewGalaxyEffect(particleCount);
+                break;
+            case '萤火虫':
+                console.log('创建萤火虫效果');
+                previewParticles = createPreviewFirefliesEffect(particleCount);
+                break;
+            case '极光':
+                console.log('创建极光效果');
+                previewParticles = createPreviewAuroraEffect(particleCount);
+                break;
+            case '暴风雪':
+                console.log('创建暴风雪效果');
+                previewParticles = createPreviewBlizzardEffect(particleCount);
+                break;
+            case '标准':
+            default:
+                console.log('创建标准星星效果');
+                previewParticles = createPreviewStarsEffect(particleCount);
+                break;
+        }
+        
+        if (previewParticles) {
+            console.log('粒子效果创建成功，添加到场景');
+            previewScene.add(previewParticles);
+            console.log('粒子效果添加完成');
+        } else {
+            console.error('粒子效果创建失败');
+        }
+    } catch (error) {
+        console.error('创建预览效果错误:', error);
+    }
+}
+
+// 创建预览用的星星效果
+function createPreviewStarsEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    const color1 = new THREE.Color('#ff0033');
+    const color2 = new THREE.Color(0xffffff);
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        
+        sizes[i] = Math.random() * 2 + 0.5;
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 },
+            uSpeed: { value: 0.02 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            uniform float uPulse;
+            uniform float uSpeed;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float dist = length(pos);
+                
+                // 添加缓慢的旋转效果
+                float rotationSpeed = uTime * 0.05;
+                float cosAngle = cos(rotationSpeed);
+                float sinAngle = sin(rotationSpeed);
+                pos.xy = mat2(cosAngle, -sinAngle, sinAngle, cosAngle) * pos.xy;
+                
+                // 脉动效果
+                float pulseWave = sin(dist * 0.05 - uTime * 3.0) * uPulse * 5.0;
+                pos += normalize(pos) * pulseWave;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (100.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的星云效果
+function createPreviewNebulaEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    const color1 = new THREE.Color('#ff0033');
+    const color2 = new THREE.Color('#880088');
+    
+    for (let i = 0; i < count; i++) {
+        const r = 50 * Math.cbrt(Math.random());
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+        
+        sizes[i] = Math.random() * 3 + 1;
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float flow = sin(length(pos) * 0.01 + uTime * 0.5) * 2.0;
+                pos += normalize(pos) * flow;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (75.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= 0.6;
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的脉冲效果
+function createPreviewPulseEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    
+    const color = new THREE.Color('#ff0033');
+    
+    for (let i = 0; i < count; i++) {
+        const r = 40 * Math.random();
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+        
+        sizes[i] = Math.random() * 2 + 1;
+        
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+        
+        phases[i] = Math.random() * Math.PI * 2;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            attribute float aPhase;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float pulse = sin(aPhase + uTime * 2.0) * 0.5 + 0.5;
+                float scale = 1.0 + pulse * 0.5;
+                pos *= scale;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (100.0 / -mvPosition.z) * scale;
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的波浪效果
+function createPreviewWaveEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    const color1 = new THREE.Color('#ff0033');
+    const color2 = new THREE.Color('#00ffff');
+    
+    for (let i = 0; i < count; i++) {
+        const r = 50 * Math.random();
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+        
+        sizes[i] = Math.random() * 2 + 0.5;
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float wave = sin(length(pos) * 0.02 + uTime * 3.0) * 5.0;
+                pos += normalize(pos) * wave;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (90.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的银河效果
+function createPreviewGalaxyEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    const color1 = new THREE.Color('#ff0033');
+    const color2 = new THREE.Color('#ffff00');
+    
+    for (let i = 0; i < count; i++) {
+        const radius = 60 * Math.sqrt(Math.random());
+        const theta = Math.random() * Math.PI * 2;
+        const z = (Math.random() - 0.5) * 25;
+        
+        positions[i * 3] = radius * Math.cos(theta);
+        positions[i * 3 + 1] = radius * Math.sin(theta);
+        positions[i * 3 + 2] = z;
+        
+        sizes[i] = Math.random() * 2 + 0.5;
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float angle = uTime * 0.01;
+                float cosAngle = cos(angle);
+                float sinAngle = sin(angle);
+                pos.xy = mat2(cosAngle, -sinAngle, sinAngle, cosAngle) * pos.xy;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (90.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的萤火虫效果
+function createPreviewFirefliesEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    const flicker = new Float32Array(count);
+    
+    const color = new THREE.Color('#ffff00');
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 75;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 75;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 75;
+        
+        sizes[i] = Math.random() * 1.5 + 0.5;
+        
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+        
+        flicker[i] = Math.random();
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('aFlicker', new THREE.BufferAttribute(flicker, 1));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            attribute float aFlicker;
+            varying vec3 vColor;
+            varying float vFlicker;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                vFlicker = aFlicker;
+                
+                vec3 pos = position;
+                float moveX = sin(aFlicker * 10.0 + uTime * 0.5) * 0.5;
+                float moveY = cos(aFlicker * 10.0 + uTime * 0.3) * 0.5;
+                float moveZ = sin(aFlicker * 10.0 + uTime * 0.4) * 0.5;
+                pos += vec3(moveX, moveY, moveZ);
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (100.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            varying float vFlicker;
+            uniform float uTime;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float flickerIntensity = sin(vFlicker * 10.0 + uTime * 5.0) * 0.3 + 0.7;
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= flickerIntensity * 0.6;
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的极光效果
+function createPreviewAuroraEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    const phases = new Float32Array(count);
+    
+    const color1 = new THREE.Color('#ff0033');
+    const color2 = new THREE.Color('#00ffff');
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        
+        sizes[i] = Math.random() * 3 + 1;
+        
+        const mixedColor = color1.clone().lerp(color2, Math.random());
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+        
+        phases[i] = Math.random() * Math.PI * 2;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            attribute float aPhase;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float flow = sin(length(pos) * 0.02 + aPhase + uTime * 0.8) * 5.0;
+                pos += normalize(pos) * flow;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (75.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= 0.4;
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的暴风雪效果
+function createPreviewBlizzardEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 3);
+    
+    const color = new THREE.Color('#ffffff');
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = Math.random() * 50 + 25;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        
+        sizes[i] = Math.random() * 1 + 0.5;
+        
+        colors[i * 3] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+        
+        velocities[i * 3] = (Math.random() - 0.5) * 2;
+        velocities[i * 3 + 1] = -Math.random() * 3 - 1;
+        velocities[i * 3 + 2] = (Math.random() - 0.5) * 2;
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('aVelocity', new THREE.BufferAttribute(velocities, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            attribute vec3 aVelocity;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                vec3 velocity = aVelocity;
+                pos += velocity * uTime;
+                
+                // 循环效果
+                if (pos.y < -50.0) {
+                    pos.y += 100.0;
+                    // 使用位置和时间来创建随机效果，避免使用Math.random()
+                    float random = sin(pos.x * 0.1 + uTime * 0.1);
+                    pos.x += random * 0.5;
+                }
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (90.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
 // 启动初始化 - 确保DOM完全加载后再执行
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded 事件触发，开始初始化');
     init();
     // 初始化原始背景设置
     originalBgType = currentBgType;
@@ -1518,4 +2351,11 @@ document.addEventListener('DOMContentLoaded', () => {
     originalBgColor = currentBgColor;
     setupSettings();
     loadBackgroundSettings();
+    
+    // 初始化预览窗口 - 延迟时间更长，确保所有DOM元素都已完全渲染
+    console.log('计划初始化预览窗口');
+    setTimeout(() => {
+        console.log('执行预览窗口初始化');
+        initPreviewWindow();
+    }, 500);
 });
