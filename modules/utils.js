@@ -69,7 +69,7 @@ function toggleStyle(body, renderer, currentStyle, resetParticles, initECG, upda
 
 // 获取DOM元素
 function getDOMElements() {
-    return {
+    const elements = {
         connectBtn: document.getElementById('connectBtn'),
         connectBtn2: document.getElementById('connectBtn2'),
         statusText: document.getElementById('statusText'),
@@ -85,6 +85,11 @@ function getDOMElements() {
         debugCount: document.getElementById('debugCount'),
         alarmOverlay: document.getElementById('alarmOverlay')
     };
+    
+    // 调试：检查heartRateEl是否获取成功
+    console.log('getDOMElements - heartRateEl:', elements.heartRateEl);
+    
+    return elements;
 }
 
 export {

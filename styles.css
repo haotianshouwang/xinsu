@@ -123,6 +123,26 @@ body.style1 button:disabled {
     box-shadow: none;
 }
 
+/* 样式1：设置按钮 */
+body.style1 #settingsBtn {
+    background: transparent;
+    border: 1px solid var(--fg);
+    color: var(--fg);
+    padding: 10px 20px;
+    font-family: var(--font-tech);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    pointer-events: auto;
+    text-transform: uppercase;
+}
+
+body.style1 #settingsBtn:hover {
+    background: var(--fg);
+    color: var(--bg);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
 body.style1 .toggle-switch {
     display: flex;
     align-items: center;
@@ -199,7 +219,6 @@ body.style1 #ecg-container {
     height: 200px;
     transform: translateY(-50%);
     z-index: 5;
-    background: rgba(0, 0, 0, 0.2);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     pointer-events: none;
@@ -387,6 +406,307 @@ body.style2 .connect-btn.connected {
     border-color: var(--accent-dim);
 }
 
+/* 样式2：设置按钮 */
+body.style2 #settingsBtn2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--accent);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.style2 #settingsBtn2:hover {
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(255, 26, 26, 0.3);
+}
+
+/* 设置面板 */
+.settings-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    max-width: 90vw;
+    max-height: 80vh;
+    background: rgba(5, 5, 5, 0.95);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(255, 26, 26, 0.2);
+    z-index: 1000;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    display: none;
+}
+
+.settings-panel.show {
+    display: block;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-header h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0;
+}
+
+#closeSettingsBtn {
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#closeSettingsBtn:hover {
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
+.settings-content {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+
+.settings-section {
+    margin-bottom: 32px;
+}
+
+.settings-section h4 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--fg);
+    text-transform: uppercase;
+    margin: 0 0 16px 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+
+.settings-group {
+    margin-bottom: 20px;
+}
+
+.settings-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.settings-group select {
+    width: 100%;
+    padding: 10px 12px;
+    background: black;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.settings-group select:hover {
+    border-color: var(--accent);
+}
+
+.module-logs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.module-log-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.module-log-item:hover {
+    color: var(--accent);
+}
+
+.module-log-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
+}
+
+.module-log-item span {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* 日志面板 */
+.log-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    max-width: 90vw;
+    max-height: 400px;
+    background: rgba(5, 5, 5, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(255, 26, 26, 0.1);
+    z-index: 999;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    opacity: 0.5;
+}
+
+.log-panel:hover {
+    opacity: 1;
+    background: rgba(5, 5, 5, 0.9);
+    box-shadow: 0 0 30px rgba(255, 26, 26, 0.2);
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+.log-header h4 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0;
+}
+
+#clearLogBtn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 9px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#clearLogBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.log-content {
+    padding: 12px;
+    overflow-y: auto;
+    max-height: 300px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #aaa;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.log-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.log-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+.log-item {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.log-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.log-item .log-time {
+    color: #555;
+    margin-right: 10px;
+}
+
+.log-item .log-module {
+    color: var(--accent);
+    margin-right: 10px;
+    font-weight: 700;
+}
+
+.log-item .log-message {
+    color: #aaa;
+    word-break: break-all;
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+    .settings-panel {
+        width: 90vw;
+        max-height: 90vh;
+    }
+    
+    .settings-content {
+        padding: 16px;
+        max-height: calc(90vh - 80px);
+    }
+    
+    .log-panel {
+        width: 90vw;
+        bottom: 10px;
+        right: 10px;
+    }
+}
+
 /* 样式2：主内容区 */
 body.style2 .main-content {
     flex: 1;
@@ -402,10 +722,14 @@ body.style2 .heart-rate-section {
     justify-content: center;
     align-items: center;
     padding: 30px 0;
+    position: relative;
+    z-index: 1000;
 }
 
 body.style2 .heart-rate-display {
     text-align: center;
+    position: relative;
+    z-index: 1000;
 }
 
 body.style2 .heart-rate-value {
@@ -413,8 +737,16 @@ body.style2 .heart-rate-value {
     font-size: clamp(80px, 20vw, 160px);
     font-weight: 900;
     line-height: 1;
-    color: var(--fg);
+    color: white;
     transition: all 0.1s ease;
+    position: relative;
+    z-index: 1000;
+}
+
+/* 确保心率显示元素始终在ECG和3D背景之上，但在设置按钮和设置面板之下 */
+#heartRate, .heart-rate-value {
+  position: relative;  /* 使 z-index 生效 */
+  z-index: 1000;       /* 设置一个合适的层级，确保不被ECG和3D背景覆盖，但不遮挡设置按钮 */
 }
 
 body.style2 .heart-rate-value.pulse {

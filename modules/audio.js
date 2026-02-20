@@ -6,6 +6,9 @@ let alarmInterval = null;
 let isAlarming = false;
 let audioEnabled = false;
 
+// 导入日志管理模块
+import { log, LOG_MODULES } from './logger.js';
+
 // 初始化音频
 function initAudio() {
     if (!audioContext) {
@@ -13,6 +16,7 @@ function initAudio() {
         gainNode = audioContext.createGain();
         gainNode.connect(audioContext.destination);
         gainNode.gain.value = 1;
+        log(LOG_MODULES.AUDIO, '音频上下文初始化成功', 'detailed');
     }
 }
 
@@ -24,6 +28,7 @@ function playHeartbeat() {
     
     if (audioContext.state === 'suspended') {
         audioContext.resume();
+        log(LOG_MODULES.AUDIO, '音频上下文恢复', 'detailed');
     }
     
     const osc = audioContext.createOscillator();
@@ -50,6 +55,8 @@ function playHeartbeat() {
     
     osc.start(now);
     osc.stop(now + attackTime + sustainTime + releaseTime + 0.01);
+    
+    log(LOG_MODULES.AUDIO, '心跳音播放', 'detailed');
 }
 
 // 警报音 (667Hz包络，每500ms重复)
@@ -61,6 +68,7 @@ function startAlarm(alarmOverlay, statusDot, heartRateEl, logDebug) {
     
     if (audioContext.state === 'suspended') {
         audioContext.resume();
+        log(LOG_MODULES.AUDIO, '音频上下文恢复', 'detailed');
     }
     
     if (alarmOverlay) alarmOverlay.classList.add('active');
@@ -70,6 +78,8 @@ function startAlarm(alarmOverlay, statusDot, heartRateEl, logDebug) {
     if (logDebug) {
         logDebug('ALARM', '心率信号丢失 - 启动警报 (667Hz QRS脉冲)', true);
     }
+    
+    log(LOG_MODULES.AUDIO, '警报启动', 'basic');
     
     alarmInterval = setInterval(() => {
         if (!isAlarming || !audioEnabled) return;
@@ -116,15 +126,20 @@ function stopAlarm(alarmOverlay, statusDot, heartRateEl, logDebug) {
     if (logDebug) {
         logDebug('INFO', '心率信号恢复 - 关闭警报');
     }
+    
+    log(LOG_MODULES.AUDIO, '警报停止', 'basic');
 }
 
 // 设置音频启用状态
 function setAudioEnabled(enabled) {
     audioEnabled = enabled;
+    log(LOG_MODULES.AUDIO, `音频 ${enabled ? '启用' : '禁用'}`, 'basic');
+    
     if (audioEnabled) {
         initAudio();
         if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume();
+            log(LOG_MODULES.AUDIO, '音频上下文恢复', 'detailed');
         }
     }
 }

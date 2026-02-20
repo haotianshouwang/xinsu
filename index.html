@@ -36,6 +36,7 @@
             <div class="controls">
                 <button id="connectBtn">连接设备</button>
                 <button class="style-toggle-btn" onclick="toggleStyle()">换个样式</button>
+                <button id="settingsBtn">设置</button>
                 <div class="toggle-switch">
                     <span class="toggle-label">音频反馈</span>
                     <label class="switch">
@@ -75,6 +76,7 @@
                 </label>
             </div>
             <button class="connect-btn" id="connectBtn2">连接设备</button>
+            <button class="connect-btn" id="settingsBtn2">设置</button>
             <button class="connect-btn style-toggle-btn" onclick="toggleStyle()">换个样式</button>
         </div>
     </header>
@@ -113,6 +115,68 @@
             </div>
         </section>
     </main>
+
+    <!-- 设置面板 -->
+    <div id="settings-panel" class="settings-panel">
+        <div class="settings-header">
+            <h3>设置</h3>
+            <button id="closeSettingsBtn">×</button>
+        </div>
+        <div class="settings-content">
+            <!-- 日志设置 -->
+            <div class="settings-section">
+                <h4>日志设置</h4>
+                <div class="settings-group">
+                    <label class="settings-label">日志级别</label>
+                    <select id="logLevelSelect">
+                        <option value="none">关闭</option>
+                        <option value="basic">基本</option>
+                        <option value="detailed">详细</option>
+                    </select>
+                </div>
+                <div class="settings-group">
+                    <label class="module-log-item">
+                        <input type="checkbox" id="logDisplay" checked>
+                        <span>显示日志面板</span>
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">模块日志</label>
+                    <div class="module-logs">
+                        <label class="module-log-item">
+                            <input type="checkbox" id="logBluetooth" checked>
+                            <span>蓝牙模块</span>
+                        </label>
+                        <label class="module-log-item">
+                            <input type="checkbox" id="logAudio" checked>
+                            <span>音频模块</span>
+                        </label>
+                        <label class="module-log-item">
+                            <input type="checkbox" id="logECG" checked>
+                            <span>ECG模块</span>
+                        </label>
+                        <label class="module-log-item">
+                            <input type="checkbox" id="logThree" checked>
+                            <span>Three.js模块</span>
+                        </label>
+                        <label class="module-log-item">
+                            <input type="checkbox" id="logStyle" checked>
+                            <span>样式模块</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志显示面板 -->
+    <div id="log-panel" class="log-panel">
+        <div class="log-header">
+            <h4>日志</h4>
+            <button id="clearLogBtn">清空</button>
+        </div>
+        <div class="log-content" id="logContent"></div>
+    </div>
 
     <script type="module" src="main.js"></script>
 </body>

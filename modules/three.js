@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+// 导入日志管理模块
+import { log, LOG_MODULES } from './logger.js';
+
 // 全局变量
 let scene = null;
 let camera = null;
@@ -13,6 +16,7 @@ function initThree(containerId, currentStyle) {
     canvasContainer = document.getElementById(containerId);
     if (!canvasContainer) {
         console.error('Canvas container not found');
+        log(LOG_MODULES.THREE, 'Canvas container not found', 'basic');
         return;
     }
 
@@ -43,6 +47,8 @@ function initThree(containerId, currentStyle) {
     }
     
     window.addEventListener('resize', onWindowResize);
+    
+    log(LOG_MODULES.THREE, `Three.js 初始化完成，样式: ${currentStyle}`, 'detailed');
 }
 
 // 创建样式1的星空 (index.html)
@@ -85,6 +91,8 @@ function createStarsStyle1() {
 
     stars = new THREE.Points(geometry, material);
     scene.add(stars);
+    
+    log(LOG_MODULES.THREE, `创建样式1星空，粒子数量: ${particleCount}`, 'detailed');
 }
 
 // 创建星空
@@ -177,6 +185,8 @@ function createStars() {
     
     stars = new THREE.Points(geometry, material);
     scene.add(stars);
+    
+    log(LOG_MODULES.THREE, `创建星空，星星数量: ${starCount}`, 'detailed');
 }
 
 // 创建粒子云
@@ -243,6 +253,8 @@ function createParticles() {
     
     particles = new THREE.Points(geometry, material);
     scene.add(particles);
+    
+    log(LOG_MODULES.THREE, `创建粒子云，粒子数量: ${count}`, 'detailed');
 }
 
 // 窗口调整
@@ -279,6 +291,8 @@ function resetParticles(style) {
         createStars();
         createParticles();
     }
+    
+    log(LOG_MODULES.THREE, `重置粒子系统，样式: ${style}`, 'detailed');
 }
 
 // 更新Three.js场景
@@ -322,6 +336,9 @@ function updateThree(time, pulseIntensity) {
     if (particles) {
         particles.rotation.y = -t * 0.03;
     }
+    
+    // 只在详细日志级别输出
+    log(LOG_MODULES.THREE, `更新Three.js场景，时间: ${t.toFixed(2)}, 脉冲强度: ${pulse.toFixed(2)}`, 'detailed');
 }
 
 // 渲染Three.js场景
@@ -329,6 +346,9 @@ function renderThree() {
     if (!renderer || !scene || !camera) return;
     
     renderer.render(scene, camera);
+    
+    // 只在详细日志级别输出
+    log(LOG_MODULES.THREE, '渲染Three.js场景', 'detailed');
 }
 
 // 更新背景颜色
