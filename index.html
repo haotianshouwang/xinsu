@@ -18,47 +18,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="style1">
+<body class="style1 light-mode">
     <!-- 3D背景容器 -->
     <div id="canvas-container"></div>
     
     <!-- 警报覆盖层 -->
     <div class="alarm-overlay" id="alarmOverlay"></div>
 
-    <!-- 样式1：UI层 -->
-    <div id="ui-layer" class="style1-only">
-        <div class="hud-top-left">
-            <h1>警告：心电图像是心率模拟结果，仅供娱乐，切勿代替医疗器械</h1>
-            <div id="bpm-wrapper">
-                <span id="bpm-display">--</span><span id="bpm-unit">次/分</span>
-            </div>
-            
-            <div class="controls">
-                <button id="connectBtn">连接设备</button>
-                <button class="style-toggle-btn" onclick="toggleStyle()">换个样式</button>
-                <button id="settingsBtn">设置</button>
-                <div class="toggle-switch">
-                    <span class="toggle-label">音频反馈</span>
-                    <label class="switch">
-                        <input type="checkbox" id="audioToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <div class="status-bar">
-            系统状态: <span id="connection-status">未连接</span>
-        </div>
-    </div>
-
-    <!-- 样式1：ECG容器 -->
-    <div id="ecg-container" class="style1-only">
-        <canvas id="ecg-canvas-style1"></canvas>
-    </div>
-
-    <!-- 样式2：顶部控制栏 -->
-    <header class="top-bar style2-only">
+    <!-- 顶部控制栏 -->
+    <header class="top-bar">
         <div class="brand">
             <div class="logo">心宿</div>
             <div class="status-indicator">
@@ -71,50 +39,48 @@
             <div class="sound-control">
                 <span class="sound-label">音效</span>
                 <label class="toggle-switch">
-                    <input type="checkbox" id="soundToggle">
+                    <input type="checkbox" id="audioToggle">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
-            <button class="connect-btn" id="connectBtn2">连接设备</button>
-            <button class="connect-btn" id="settingsBtn2">设置</button>
+            <button class="connect-btn" id="connectBtn">连接设备</button>
             <button class="connect-btn style-toggle-btn" onclick="toggleStyle()">换个样式</button>
+            <button class="connect-btn" id="settingsBtn">设置</button>
         </div>
     </header>
 
-    <!-- 样式2：主内容 -->
-    <main class="main-content style2-only">
+    <!-- 主内容 -->
+    <main class="main-content">
         <!-- 心率显示 -->
         <section class="heart-rate-section">
             <div class="heart-rate-display">
-                <div class="heart-rate-value" id="heartRate">--</div>
-                <div class="heart-rate-unit">BPM</div>
+                <span id="bpm-display">--</span><span id="bpm-unit">次/分</span>
             </div>
         </section>
 
         <!-- ECG 显示 -->
         <section class="ecg-section">
-            <div class="ecg-label">警告：心电图像是心率模拟结果，仅供娱乐，切勿代替医疗器械</div>
             <div class="ecg-wrapper">
                 <div class="ecg-grid"></div>
-                <canvas id="ecg-canvas-style2"></canvas>
-            </div>
-        </section>
-
-        <!-- 调试面板 -->
-        <section class="debug-panel">
-            <div class="debug-header">
-                <span class="debug-title">数据包调试</span>
-                <span class="debug-count" id="debugCount">0 packets</span>
-            </div>
-            <div class="debug-content" id="debugContent">
-                <div class="debug-line">
-                    <span class="debug-time">--:--:--</span>
-                    <span class="debug-type">WAIT</span>
-                    <span class="debug-data">等待设备连接...</span>
-                </div>
+                <canvas id="ecg-canvas"></canvas>
             </div>
         </section>
     </main>
+
+    <!-- 底部详细信息 -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="warning-info">
+                警告：心电图像是心率模拟结果，仅供娱乐，切勿代替医疗器械
+            </div>
+            <div class="footer-info">
+                <a href="https://昊天兽王.top" target="_blank">昊天兽王</a> | 
+                <a href="https://milir.top/" target="_blank">milirstudio</a> | 
+                <a href="https://github.com/haotianshouwang/xinsu" target="_blank">心宿 GitHub</a> | 
+                <a href="https://beian.miit.gov.cn/" target="_blank">备-xxxxxxxxxxxx</a>
+            </div>
+        </div>
+    </footer>
 
     <!-- 设置面板 -->
     <div id="settings-panel" class="settings-panel">
@@ -122,46 +88,81 @@
             <h3>设置</h3>
             <button id="closeSettingsBtn">×</button>
         </div>
-        <div class="settings-content">
-            <!-- 日志设置 -->
-            <div class="settings-section">
-                <h4>日志设置</h4>
-                <div class="settings-group">
-                    <label class="settings-label">日志级别</label>
-                    <select id="logLevelSelect">
-                        <option value="none">关闭</option>
-                        <option value="basic">基本</option>
-                        <option value="detailed">详细</option>
-                    </select>
+        <div class="settings-container">
+            <!-- 设置导航 -->
+            <div class="settings-nav">
+                <button class="settings-nav-item active" data-section="interface">界面设置</button>
+                <button class="settings-nav-item" data-section="background">背景设置</button>
+                <button class="settings-nav-item" data-section="logs">日志设置</button>
+            </div>
+            <!-- 设置内容 -->
+            <div class="settings-content">
+                <!-- 界面设置 -->
+                <div class="settings-section" id="interface-section">
+                    <h4>界面设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">界面样式</label>
+                        <div class="interface-options">
+                            <div class="interface-option" data-style="style1">
+                                <div class="interface-preview style1-preview"></div>
+                                <span>样式 1</span>
+                            </div>
+                            <div class="interface-option" data-style="style2">
+                                <div class="interface-preview style2-preview"></div>
+                                <span>样式 2</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">夜间模式</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="settings-group">
-                    <label class="module-log-item">
-                        <input type="checkbox" id="logDisplay" checked>
-                        <span>显示日志面板</span>
-                    </label>
+
+                <!-- 背景设置 -->
+                <div class="settings-section" id="background-section" style="display: none;">
+                    <h4>背景设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">背景类型</label>
+                        <select id="bgTypeSelect">
+                            <option value="color">纯色背景</option>
+                            <option value="image">图片背景</option>
+                        </select>
+                    </div>
+                    <div class="settings-group bg-color-group">
+                        <label class="settings-label">背景颜色</label>
+                        <input type="color" id="bgColorPicker" value="#000000">
+                    </div>
+                    <div class="settings-group bg-image-group">
+                        <label class="settings-label">背景图片</label>
+                        <input type="text" id="bgImageUrl" placeholder="输入图片URL">
+                        <div class="bg-image-local">
+                            <label class="settings-label">本地图片</label>
+                            <select id="bgLocalImageSelect">
+                                <option value="">选择本地图片</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="settings-group">
-                    <label class="settings-label">模块日志</label>
-                    <div class="module-logs">
+
+                <!-- 日志设置 -->
+                <div class="settings-section" id="logs-section" style="display: none;">
+                    <h4>日志设置</h4>
+                    <div class="settings-group">
+                        <label class="settings-label">日志级别</label>
+                        <select id="logLevelSelect">
+                            <option value="none">关闭</option>
+                            <option value="basic" selected>基本</option>
+                            <option value="detailed">详细</option>
+                        </select>
+                    </div>
+                    <div class="settings-group">
                         <label class="module-log-item">
-                            <input type="checkbox" id="logBluetooth" checked>
-                            <span>蓝牙模块</span>
-                        </label>
-                        <label class="module-log-item">
-                            <input type="checkbox" id="logAudio" checked>
-                            <span>音频模块</span>
-                        </label>
-                        <label class="module-log-item">
-                            <input type="checkbox" id="logECG" checked>
-                            <span>ECG模块</span>
-                        </label>
-                        <label class="module-log-item">
-                            <input type="checkbox" id="logThree" checked>
-                            <span>Three.js模块</span>
-                        </label>
-                        <label class="module-log-item">
-                            <input type="checkbox" id="logStyle" checked>
-                            <span>样式模块</span>
+                            <input type="checkbox" id="logDisplay">
+                            <span>显示日志面板</span>
                         </label>
                     </div>
                 </div>
@@ -173,7 +174,11 @@
     <div id="log-panel" class="log-panel">
         <div class="log-header">
             <h4>日志</h4>
-            <button id="clearLogBtn">清空</button>
+            <div class="log-controls">
+                <button id="clearLogBtn">清空</button>
+                <button id="pinLogBtn">📌</button>
+                <button id="closeLogBtn">×</button>
+            </div>
         </div>
         <div class="log-content" id="logContent"></div>
     </div>

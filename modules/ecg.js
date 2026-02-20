@@ -39,12 +39,8 @@ const ecgStyles = {
 
 // ============ 初始化 ECG Canvas ============
 export function initECG(currentStyle) {
-    // 根据当前样式选择正确的canvas元素
-    if (currentStyle === 'style1') {
-        ecgCanvas = document.getElementById('ecg-canvas-style1');
-    } else {
-        ecgCanvas = document.getElementById('ecg-canvas-style2');
-    }
+    // 使用统一的canvas元素
+    ecgCanvas = document.getElementById('ecg-canvas');
     
     if (!ecgCanvas) {
         console.error('ECG canvas not found');

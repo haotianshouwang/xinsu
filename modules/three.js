@@ -25,16 +25,12 @@ function initThree(containerId, currentStyle) {
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 50;
     
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
-    // 根据当前样式设置初始背景颜色
-    if (currentStyle === 'style1') {
-        renderer.setClearColor(0x000000, 1);
-    } else {
-        renderer.setClearColor(0x050505, 1);
-    }
+    // 设置透明背景，让HTML背景图片可见
+    renderer.setClearColor(0x000000, 0);
     
     canvasContainer.appendChild(renderer.domElement);
     

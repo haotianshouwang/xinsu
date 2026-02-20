@@ -1,5 +1,5 @@
 // 调试日志
-function logDebug(debugContent, debugCount, type, data, highlight = false) {
+export function logDebug(debugContent, debugCount, type, data, highlight = false) {
     if (!debugContent) return;
     
     const now = new Date();
@@ -28,7 +28,7 @@ function logDebug(debugContent, debugCount, type, data, highlight = false) {
 }
 
 // 样式切换功能
-function toggleStyle(body, renderer, currentStyle, resetParticles, initECG, updateECGCanvas, onWindowResize) {
+export function toggleStyle(body, renderer, currentStyle, resetParticles, initECG, updateECGCanvas, onWindowResize) {
     console.log('Toggle style function called');
     if (body.classList.contains('style1')) {
         console.log('Switching to style2');
@@ -68,13 +68,13 @@ function toggleStyle(body, renderer, currentStyle, resetParticles, initECG, upda
 }
 
 // 获取DOM元素
-function getDOMElements() {
+export function getDOMElements() {
     const elements = {
         connectBtn: document.getElementById('connectBtn'),
         connectBtn2: document.getElementById('connectBtn2'),
         statusText: document.getElementById('statusText'),
         statusDot: document.getElementById('statusDot'),
-        heartRateEl: document.getElementById('heartRate'),
+        heartRateEl: document.getElementById('bpm-display'), // 使用bpm-display作为heartRateEl
         bpmDisplay: document.getElementById('bpm-display'),
         bpmUnit: document.getElementById('bpm-unit'),
         connectionStatus: document.getElementById('connection-status'),
@@ -91,9 +91,3 @@ function getDOMElements() {
     
     return elements;
 }
-
-export {
-    logDebug,
-    toggleStyle,
-    getDOMElements
-};
