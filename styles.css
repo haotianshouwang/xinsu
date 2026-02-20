@@ -1,0 +1,640 @@
+/* 基础重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 样式切换基础类 */
+body.style1 {
+    --bg: #000000;
+    --fg: #ffffff;
+    --accent: #ff0033;
+    --muted: #666666;
+    --border: rgba(255, 255, 255, 0.1);
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+    user-select: none;
+}
+
+body.style2 {
+    --bg: #050505;
+    --fg: #ffffff;
+    --accent: #ff1a1a;
+    --accent-dim: #990000;
+    --muted: #666666;
+    --card: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.08);
+    font-family: 'JetBrains Mono', monospace;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--fg);
+    transition: all 0.3s ease;
+}
+
+/* 3D背景容器 */
+#canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+/* 样式1：UI层 */
+body.style1 #ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+body.style1 .hud-top-left {
+    pointer-events: auto;
+}
+
+body.style1 h1 {
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: #666;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+}
+
+body.style1 #bpm-display {
+    font-size: 80px;
+    font-weight: bold;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+    line-height: 1;
+}
+
+body.style1 #bpm-unit {
+    font-size: 20px;
+    color: #fff;
+    margin-left: 5px;
+}
+
+body.style1 .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+body.style1 button {
+    background: transparent;
+    border: 1px solid var(--fg);
+    color: var(--fg);
+    padding: 10px 20px;
+    font-family: var(--font-tech);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    pointer-events: auto;
+    text-transform: uppercase;
+}
+
+body.style1 button:hover {
+    background: var(--fg);
+    color: var(--bg);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+body.style1 button:disabled {
+    border-color: #333;
+    color: #333;
+    cursor: not-allowed;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.style1 .toggle-switch {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+body.style1 .toggle-label {
+    margin-right: 10px;
+    font-size: 12px;
+    color: #aaa;
+}
+
+body.style1 .switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+body.style1 .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+body.style1 .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333;
+    transition: .4s;
+    border: 1px solid #555;
+}
+
+body.style1 .slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+
+body.style1 input:checked + .slider {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+body.style1 input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+body.style1 .status-bar {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    border-top: 1px solid #333;
+    padding-top: 10px;
+}
+
+body.style1 #connection-status {
+    color: var(--accent);
+}
+
+/* 样式1：ECG容器 */
+body.style1 #ecg-container {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 200px;
+    transform: translateY(-50%);
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+}
+
+body.style1 canvas#ecg-canvas-style1 {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+body.style2 canvas#ecg-canvas-style2 {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 样式2：顶部控制栏 */
+body.style2 .top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: linear-gradient(180deg, rgba(5, 5, 5, 0.95) 0%, rgba(5, 5, 5, 0.8) 70%, transparent 100%);
+    backdrop-filter: blur(10px);
+}
+
+body.style2 .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+body.style2 .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+body.style2 .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+}
+
+body.style2 .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s ease;
+}
+
+body.style2 .status-dot.connected {
+    background: #00ff88;
+    box-shadow: 0 0 10px #00ff88;
+    animation: statusPulse 2s ease-in-out infinite;
+}
+
+body.style2 .status-dot.alarm {
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent);
+    animation: alarmBlink 0.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes alarmBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+body.style2 .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+body.style2 .sound-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+body.style2 .sound-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+body.style2 .toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+}
+
+body.style2 .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+body.style2 .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--border);
+    border-radius: 22px;
+    transition: 0.3s;
+}
+
+body.style2 .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: var(--muted);
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+body.style2 .toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-dim);
+}
+
+body.style2 .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(18px);
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+body.style2 .connect-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--accent);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+body.style2 .connect-btn:hover {
+    background: var(--accent);
+    box-shadow: 0 0 20px rgba(255, 26, 26, 0.3);
+}
+
+body.style2 .connect-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+body.style2 .connect-btn.connected {
+    background: var(--accent-dim);
+    border-color: var(--accent-dim);
+}
+
+/* 样式2：主内容区 */
+body.style2 .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 24px;
+    gap: 24px;
+}
+
+/* 样式2：心率显示区 */
+body.style2 .heart-rate-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 0;
+}
+
+body.style2 .heart-rate-display {
+    text-align: center;
+}
+
+body.style2 .heart-rate-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(80px, 20vw, 160px);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--fg);
+    transition: all 0.1s ease;
+}
+
+body.style2 .heart-rate-value.pulse {
+    color: var(--accent);
+    text-shadow: 0 0 60px var(--accent), 0 0 120px var(--accent);
+}
+
+body.style2 .heart-rate-value.alarm {
+    animation: alarmText 0.5s ease-in-out infinite;
+}
+
+@keyframes alarmText {
+    0%, 100% { color: var(--fg); }
+    50% { color: var(--accent); }
+}
+
+body.style2 .heart-rate-unit {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: 6px;
+    margin-top: 8px;
+}
+
+/* 样式2：ECG 区域 */
+body.style2 .ecg-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+body.style2 .ecg-wrapper {
+    flex: 1;
+    position: relative;
+    min-height: 150px;
+    max-height: 200px;
+}
+
+body.style2 .ecg-label {
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+body.style2 .ecg-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(rgba(255, 26, 26, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 26, 26, 0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+
+/* 样式2：调试面板 */
+body.style2 .debug-panel {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+body.style2 .debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+}
+
+body.style2 .debug-title {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+body.style2 .debug-count {
+    font-size: 10px;
+    color: var(--accent);
+}
+
+body.style2 .debug-content {
+    height: 120px;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #888;
+}
+
+body.style2 .debug-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+body.style2 .debug-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body.style2 .debug-content::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+body.style2 .debug-line {
+    display: flex;
+    gap: 12px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+body.style2 .debug-time {
+    color: #555;
+    min-width: 70px;
+}
+
+body.style2 .debug-type {
+    color: #666;
+    min-width: 40px;
+}
+
+body.style2 .debug-data {
+    color: #aaa;
+    word-break: break-all;
+}
+
+body.style2 .debug-data.highlight {
+    color: var(--accent);
+}
+
+/* 警报状态 */
+.alarm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.alarm-overlay.active {
+    opacity: 1;
+    animation: alarmFlash 1s ease-in-out infinite;
+}
+
+@keyframes alarmFlash {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(255, 26, 26, 0.05); }
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+    body.style2 .top-bar {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    body.style2 .brand {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    body.style2 .controls {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    body.style2 .main-content {
+        padding: 16px;
+    }
+    
+    body.style2 .sound-label {
+        display: none;
+    }
+    
+    body.style2 .debug-content {
+        height: 100px;
+    }
+}
+
+/* 样式切换按钮 */
+.style-toggle-btn {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* 隐藏/显示元素 */
+body.style1 .style2-only {
+    display: none;
+}
+
+body.style2 .style1-only {
+    display: none;
+}
+
+body.style2 .ui-layer {
+    display: none;
+}
+
+body.style1 .main-content {
+    display: none;
+}
+
+body.style1 .top-bar {
+    display: none;
+}
+
+body.style2 #ecg-container {
+    display: none;
+}

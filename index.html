@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="心宿, 米粒工作室, 昊天兽王, 心率广播网站, 心率监测, 蓝牙心率, 心电图, QRS脉冲">
+    <meta name="description" content="心宿心率广播网站 - 实时蓝牙心率监测与视觉化反馈，米粒工作室 & 昊天兽王 出品。">
+    <meta name="author" content="米粒工作室 & 昊天兽王">
+    <title>心宿 · 心率检测</title>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="style1">
+    <!-- 3D背景容器 -->
+    <div id="canvas-container"></div>
+    
+    <!-- 警报覆盖层 -->
+    <div class="alarm-overlay" id="alarmOverlay"></div>
+
+    <!-- 样式1：UI层 -->
+    <div id="ui-layer" class="style1-only">
+        <div class="hud-top-left">
+            <h1>警告：心电图像是心率模拟结果，仅供娱乐，切勿代替医疗器械</h1>
+            <div id="bpm-wrapper">
+                <span id="bpm-display">--</span><span id="bpm-unit">次/分</span>
+            </div>
+            
+            <div class="controls">
+                <button id="connectBtn">连接设备</button>
+                <button class="style-toggle-btn" onclick="toggleStyle()">换个样式</button>
+                <div class="toggle-switch">
+                    <span class="toggle-label">音频反馈</span>
+                    <label class="switch">
+                        <input type="checkbox" id="audioToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            系统状态: <span id="connection-status">未连接</span>
+        </div>
+    </div>
+
+    <!-- 样式1：ECG容器 -->
+    <div id="ecg-container" class="style1-only">
+        <canvas id="ecg-canvas-style1"></canvas>
+    </div>
+
+    <!-- 样式2：顶部控制栏 -->
+    <header class="top-bar style2-only">
+        <div class="brand">
+            <div class="logo">心宿</div>
+            <div class="status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">未连接</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="sound-control">
+                <span class="sound-label">音效</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <button class="connect-btn" id="connectBtn2">连接设备</button>
+            <button class="connect-btn style-toggle-btn" onclick="toggleStyle()">换个样式</button>
+        </div>
+    </header>
+
+    <!-- 样式2：主内容 -->
+    <main class="main-content style2-only">
+        <!-- 心率显示 -->
+        <section class="heart-rate-section">
+            <div class="heart-rate-display">
+                <div class="heart-rate-value" id="heartRate">--</div>
+                <div class="heart-rate-unit">BPM</div>
+            </div>
+        </section>
+
+        <!-- ECG 显示 -->
+        <section class="ecg-section">
+            <div class="ecg-label">警告：心电图像是心率模拟结果，仅供娱乐，切勿代替医疗器械</div>
+            <div class="ecg-wrapper">
+                <div class="ecg-grid"></div>
+                <canvas id="ecg-canvas-style2"></canvas>
+            </div>
+        </section>
+
+        <!-- 调试面板 -->
+        <section class="debug-panel">
+            <div class="debug-header">
+                <span class="debug-title">数据包调试</span>
+                <span class="debug-count" id="debugCount">0 packets</span>
+            </div>
+            <div class="debug-content" id="debugContent">
+                <div class="debug-line">
+                    <span class="debug-time">--:--:--</span>
+                    <span class="debug-type">WAIT</span>
+                    <span class="debug-data">等待设备连接...</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
