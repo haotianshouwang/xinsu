@@ -95,6 +95,8 @@ function updateHeartRateColor(color) {
     const bpmDisplay = document.getElementById('bpm-display');
     if (bpmDisplay) {
         bpmDisplay.style.color = color;
+        // 更新 CSS 变量，确保所有使用该颜色的元素都能同步更新
+        document.body.style.setProperty('--heart-rate-color', color);
     }
 }
 
@@ -103,6 +105,54 @@ function updateHeartRateSize(size) {
     const bpmDisplay = document.getElementById('bpm-display');
     if (bpmDisplay) {
         bpmDisplay.style.fontSize = `${size}px`;
+    }
+}
+
+// 更新心率发光效果
+function updateHeartRateGlow(enabled) {
+    console.log('updateHeartRateGlow called with enabled:', enabled);
+    const bpmDisplay = document.getElementById('bpm-display');
+    console.log('bpmDisplay element:', bpmDisplay);
+    if (bpmDisplay) {
+        if (enabled) {
+            console.log('Enabling glow effect');
+            bpmDisplay.style.textShadow = `0 0 20px var(--heart-rate-color), 0 0 40px var(--heart-rate-color), 0 0 60px var(--heart-rate-color)`;
+        } else {
+            console.log('Disabling glow effect');
+            // 完全移除发光效果
+            bpmDisplay.style.textShadow = 'none';
+        }
+    }
+}
+
+// 更新心率发光颜色
+function updateHeartRateGlowColor(color) {
+    document.body.style.setProperty('--heart-rate-glow-color', color);
+    const bpmDisplay = document.getElementById('bpm-display');
+    if (bpmDisplay) {
+        const glowEnabled = document.getElementById('hrGlowEffectToggle')?.checked || false;
+        if (glowEnabled) {
+            bpmDisplay.style.textShadow = `0 0 20px ${color}, 0 0 40px ${color}, 0 0 60px ${color}`;
+        } else {
+            bpmDisplay.style.textShadow = 'none';
+        }
+    }
+}
+
+// 更新心率发光强度
+function updateHeartRateGlowIntensity(intensity) {
+    const bpmDisplay = document.getElementById('bpm-display');
+    if (bpmDisplay) {
+        const color = document.getElementById('hrGlowColorPicker')?.value || '#9acd32';
+        const glowEnabled = document.getElementById('hrGlowEffectToggle')?.checked || false;
+        if (glowEnabled) {
+            const blur1 = 20 * intensity;
+            const blur2 = 40 * intensity;
+            const blur3 = 60 * intensity;
+            bpmDisplay.style.textShadow = `0 0 ${blur1}px ${color}, 0 0 ${blur2}px ${color}, 0 0 ${blur3}px ${color}`;
+        } else {
+            bpmDisplay.style.textShadow = 'none';
+        }
     }
 }
 
@@ -310,14 +360,16 @@ function animate(time) {
         });
     }
     
-    // 警报检测：只有设备连接时才报警
-    const hasRecentData = t - getLastDataTime() <= 5;
+    // 警报检测：只有设备连接但长时间无数据时才报警
+    const hasRecentData = t - getLastDataTime() <= 10; // 延长警报触发时间至10秒
     const isConnected = getConnected();
     
-    if (isConnected && (!hasData || !hasRecentData)) {
+    // 只有当设备连接但确实没有数据或数据长时间过时才报警
+    // 即使心率值相同，只要设备仍在发送数据，就不应该触发警报
+    if (isConnected && (!hasData && !hasRecentData)) {
         startAlarm(elements.alarmOverlay, elements.statusDot, elements.heartRateEl, (type, data, highlight) => logDebug(elements.debugContent, elements.debugCount, type, data, highlight));
         
-        // 当没有数据或数据过时，更新心率显示为"--"
+        // 当没有数据且数据过时，更新心率显示为"--"
         if (elements.bpmDisplay && (elements.bpmDisplay.textContent !== '--' && elements.bpmDisplay.textContent !== '0')) {
             updateBluetoothHeartRate(elements.bpmDisplay, elements.heartRateEl, '--');
         }
@@ -646,6 +698,52 @@ function setupSettings() {
         });
     });
     
+    // 绑定心率颜色变更事件
+    const heartRateColor = document.getElementById('heartRateColor');
+    if (heartRateColor) {
+        heartRateColor.addEventListener('change', (e) => {
+            updateHeartRateColor(e.target.value);
+        });
+    }
+    
+    // 绑定发光效果设置事件
+    const hrGlowEffectToggle = document.getElementById('hrGlowEffectToggle');
+    const hrGlowColorPicker = document.getElementById('hrGlowColorPicker');
+    const hrGlowIntensity = document.getElementById('hrGlowIntensity');
+    const hrGlowIntensityInput = document.getElementById('hrGlowIntensityInput');
+    
+    if (hrGlowEffectToggle) {
+        hrGlowEffectToggle.addEventListener('change', (e) => {
+            updateHeartRateGlow(e.target.checked);
+        });
+    }
+    
+    if (hrGlowColorPicker) {
+        hrGlowColorPicker.addEventListener('change', (e) => {
+            updateHeartRateGlowColor(e.target.value);
+        });
+    }
+    
+    if (hrGlowIntensity) {
+        hrGlowIntensity.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (hrGlowIntensityInput) {
+                hrGlowIntensityInput.value = value;
+            }
+            updateHeartRateGlowIntensity(value);
+        });
+    }
+    
+    if (hrGlowIntensityInput) {
+        hrGlowIntensityInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (hrGlowIntensity) {
+                hrGlowIntensity.value = value;
+            }
+            updateHeartRateGlowIntensity(value);
+        });
+    }
+    
     // 绑定颜色预设点击事件
     const colorPresets = document.querySelectorAll('.color-preset');
     colorPresets.forEach(preset => {
@@ -682,6 +780,13 @@ function setupSettings() {
                     if (heartRateColor) {
                         heartRateColor.value = color;
                         updateHeartRateColor(color);
+                        
+                        // 同时更新心率发光效果颜色
+                        const hrGlowColorPicker = document.getElementById('hrGlowColorPicker');
+                        if (hrGlowColorPicker) {
+                            hrGlowColorPicker.value = color;
+                            updateHeartRateGlowColor(color);
+                        }
                     }
                 }
                 
@@ -755,9 +860,23 @@ function setupSettings() {
                 
                 const hrStyleRadios = document.querySelectorAll('input[name="hr-style"]');
                 hrStyleRadios.forEach(radio => {
-                    radio.checked = radio.value === 'digital';
+                    radio.checked = radio.value === 'pulse';
                 });
-                updateHeartRateStyle('digital');
+                updateHeartRateStyle('pulse');
+                
+                // 重置心率颜色为黄绿色
+                const heartRateColor = document.getElementById('heartRateColor');
+                if (heartRateColor) {
+                    heartRateColor.value = '#9acd32';
+                    updateHeartRateColor('#9acd32');
+                }
+                
+                // 重置心率字体大小为 120px
+                const heartRateSize = document.getElementById('heartRateSize');
+                if (heartRateSize) {
+                    heartRateSize.value = '120';
+                    updateHeartRateSize('120');
+                }
                 
                 // 重置音频设置
                 const audioToggle = document.getElementById('audioToggle');
@@ -825,9 +944,46 @@ function setupSettings() {
         
         const hrStyleRadios = document.querySelectorAll('input[name="hr-style"]');
         hrStyleRadios.forEach(radio => {
-            radio.checked = radio.value === 'digital';
+            radio.checked = radio.value === 'pulse';
         });
-        updateHeartRateStyle('digital');
+        updateHeartRateStyle('pulse');
+        
+        // 设置默认心率颜色为黄绿色
+        const heartRateColor = document.getElementById('heartRateColor');
+        if (heartRateColor) {
+            heartRateColor.value = '#9acd32';
+            updateHeartRateColor('#9acd32');
+        }
+        
+        // 初始化发光效果设置
+        const hrGlowEffectToggle = document.getElementById('hrGlowEffectToggle');
+        const hrGlowColorPicker = document.getElementById('hrGlowColorPicker');
+        const hrGlowIntensity = document.getElementById('hrGlowIntensity');
+        const hrGlowIntensityInput = document.getElementById('hrGlowIntensityInput');
+        
+        if (hrGlowEffectToggle) {
+            hrGlowEffectToggle.checked = true;
+        }
+        
+        if (hrGlowColorPicker) {
+            hrGlowColorPicker.value = '#9acd32';
+            updateHeartRateGlowColor('#9acd32');
+        }
+        
+        if (hrGlowIntensity) {
+            hrGlowIntensity.value = '1';
+            if (hrGlowIntensityInput) {
+                hrGlowIntensityInput.value = '1';
+            }
+            updateHeartRateGlowIntensity(1);
+        }
+        
+        // 设置默认字体大小为 120px
+        const heartRateSize = document.getElementById('heartRateSize');
+        if (heartRateSize) {
+            heartRateSize.value = '120';
+            updateHeartRateSize('120');
+        }
     }
     
     // 初始化设置
@@ -848,6 +1004,8 @@ function setupSettings() {
             document.body.style.setProperty('--accent', '#ff0033');
             // 初始化RGB值
             document.body.style.setProperty('--accent-rgb', '255, 0, 51');
+            // 初始化心率颜色为黄绿色
+            document.body.style.setProperty('--heart-rate-color', '#9acd32');
             
             // 初始化粒子效果颜色，从粒子颜色选择器获取默认值
             if (window.setParticleColor) {
@@ -1392,44 +1550,44 @@ function updateParticleEffectWithMultiColors(effectType) {
         });
     }
     
-    // 发光效果设置
-    const glowEffectToggle = document.getElementById('glowEffectToggle');
-    if (glowEffectToggle) {
-        glowEffectToggle.addEventListener('change', (e) => {
+    // 发光效果设置（3D粒子效果）
+    const particleGlowEffectToggle = document.getElementById('glowEffectToggle');
+    if (particleGlowEffectToggle) {
+        particleGlowEffectToggle.addEventListener('change', (e) => {
             effectHeartRateConfig.glowEffect = e.target.checked;
             console.log('发光效果:', effectHeartRateConfig.glowEffect);
             setEffectHeartRateConfig(effectHeartRateConfig);
         });
     }
     
-    const glowColorPicker = document.getElementById('glowColorPicker');
-    if (glowColorPicker) {
-        glowColorPicker.addEventListener('change', (e) => {
+    const particleGlowColorPicker = document.getElementById('glowColorPicker');
+    if (particleGlowColorPicker) {
+        particleGlowColorPicker.addEventListener('change', (e) => {
             effectHeartRateConfig.glowColor = e.target.value;
             console.log('发光颜色:', effectHeartRateConfig.glowColor);
             setEffectHeartRateConfig(effectHeartRateConfig);
         });
     }
     
-    const glowIntensity = document.getElementById('glowIntensity');
-    const glowIntensityInput = document.getElementById('glowIntensityInput');
-    if (glowIntensity) {
-        glowIntensity.addEventListener('input', (e) => {
+    const particleGlowIntensity = document.getElementById('glowIntensity');
+    const particleGlowIntensityInput = document.getElementById('glowIntensityInput');
+    if (particleGlowIntensity) {
+        particleGlowIntensity.addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
             effectHeartRateConfig.glowIntensity = value;
-            if (glowIntensityInput) {
-                glowIntensityInput.value = value;
+            if (particleGlowIntensityInput) {
+                particleGlowIntensityInput.value = value;
             }
             console.log('发光强度:', effectHeartRateConfig.glowIntensity);
             setEffectHeartRateConfig(effectHeartRateConfig);
         });
     }
-    if (glowIntensityInput) {
-        glowIntensityInput.addEventListener('input', (e) => {
+    if (particleGlowIntensityInput) {
+        particleGlowIntensityInput.addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
             effectHeartRateConfig.glowIntensity = value;
-            if (glowIntensity) {
-                glowIntensity.value = value;
+            if (particleGlowIntensity) {
+                particleGlowIntensity.value = value;
             }
             console.log('发光强度:', effectHeartRateConfig.glowIntensity);
             setEffectHeartRateConfig(effectHeartRateConfig);
@@ -1607,13 +1765,14 @@ function updateParticleEffectWithMultiColors(effectType) {
     }
     
     // 绑定心率设置事件
-    const heartRatePosition = document.getElementById('heartRatePosition');
-    const heartRateStyle = document.getElementById('heartRateStyle');
-    const heartRateColor = document.getElementById('heartRateColor');
-    const heartRateSize = document.getElementById('heartRateSize');
+    const hrDisplayPosition = document.getElementById('heartRatePosition');
+    const hrDisplayStyle = document.getElementById('heartRateStyle');
+    const hrDisplayColor = document.getElementById('heartRateColor');
+    const hrDisplaySize = document.getElementById('heartRateSize');
+    const hrDisplaySizeInput = document.getElementById('heartRateSizeInput');
     
-    if (heartRatePosition) {
-        heartRatePosition.addEventListener('change', (e) => {
+    if (hrDisplayPosition) {
+        hrDisplayPosition.addEventListener('change', (e) => {
             // 这里可以添加心率显示位置的逻辑
             const position = e.target.value;
             console.log('心率显示位置:', position);
@@ -1621,8 +1780,8 @@ function updateParticleEffectWithMultiColors(effectType) {
         });
     }
     
-    if (heartRateStyle) {
-        heartRateStyle.addEventListener('change', (e) => {
+    if (hrDisplayStyle) {
+        hrDisplayStyle.addEventListener('change', (e) => {
             // 这里可以添加心率显示样式的逻辑
             const style = e.target.value;
             console.log('心率显示样式:', style);
@@ -1630,8 +1789,8 @@ function updateParticleEffectWithMultiColors(effectType) {
         });
     }
     
-    if (heartRateColor) {
-        heartRateColor.addEventListener('change', (e) => {
+    if (hrDisplayColor) {
+        hrDisplayColor.addEventListener('change', (e) => {
             // 这里可以添加心率显示颜色的逻辑
             const color = e.target.value;
             console.log('心率显示颜色:', color);
@@ -1639,11 +1798,26 @@ function updateParticleEffectWithMultiColors(effectType) {
         });
     }
     
-    if (heartRateSize) {
-        heartRateSize.addEventListener('input', (e) => {
+    if (hrDisplaySize) {
+        hrDisplaySize.addEventListener('input', (e) => {
             // 这里可以添加心率显示字体大小的逻辑
             const size = e.target.value;
             console.log('心率显示字体大小:', size);
+            if (hrDisplaySizeInput) {
+                hrDisplaySizeInput.value = size;
+            }
+            updateHeartRateSize(size);
+        });
+    }
+    
+    if (hrDisplaySizeInput) {
+        hrDisplaySizeInput.addEventListener('input', (e) => {
+            // 这里可以添加心率显示字体大小的逻辑
+            const size = e.target.value;
+            console.log('心率显示字体大小:', size);
+            if (hrDisplaySize) {
+                hrDisplaySize.value = size;
+            }
             updateHeartRateSize(size);
         });
     }
@@ -1700,6 +1874,13 @@ function updateParticleEffectWithMultiColors(effectType) {
                 if (heartRateColor) {
                     heartRateColor.value = e.target.value;
                     updateHeartRateColor(e.target.value);
+                    
+                    // 同时更新心率发光效果颜色
+                    const hrGlowColorPicker = document.getElementById('hrGlowColorPicker');
+                    if (hrGlowColorPicker) {
+                        hrGlowColorPicker.value = e.target.value;
+                        updateHeartRateGlowColor(e.target.value);
+                    }
                 }
             }
             

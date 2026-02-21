@@ -91,8 +91,28 @@ const ecgStyles = {
         gridSize: 40,
         gradient: (ctx, width) => {
             const gradient = ctx.createLinearGradient(0, 0, width, 0);
-            gradient.addColorStop(0, 'rgba(255, 0, 51, 0)');
-            gradient.addColorStop(0.8, 'rgba(255, 0, 51, 1)');
+            // 使用与心率显示相同的颜色
+            const color = getComputedStyle(document.documentElement).getPropertyValue('--heart-rate-color');
+            // 将 CSS 颜色转换为 rgba
+            const tempEl = document.createElement('div');
+            tempEl.style.color = color;
+            document.body.appendChild(tempEl);
+            const computedColor = getComputedStyle(tempEl).color;
+            document.body.removeChild(tempEl);
+            
+            // 提取 RGB 值
+            const rgbMatch = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+                const r = rgbMatch[1];
+                const g = rgbMatch[2];
+                const b = rgbMatch[3];
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+                gradient.addColorStop(0.8, `rgba(${r}, ${g}, ${b}, 1)`);
+            } else {
+                //  fallback to default color
+                gradient.addColorStop(0, 'rgba(154, 205, 50, 0)');
+                gradient.addColorStop(0.8, 'rgba(154, 205, 50, 1)');
+            }
             gradient.addColorStop(1, '#fff');
             return gradient;
         },

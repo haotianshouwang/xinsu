@@ -19,7 +19,7 @@ body.light-mode {
     --bg: #ffffff;
     --fg: #333333;
     --accent: #ff0033;
-    --heart-rate-color: #ff0033;
+    --heart-rate-color: #9acd32;
     --muted: #666666;
     --card: rgba(255, 255, 255, 0.95);
     --border: rgba(0, 0, 0, 0.1);
@@ -30,7 +30,7 @@ body.dark-mode {
     --bg: #050505;
     --fg: #ffffff;
     --accent: #ff1a1a;
-    --heart-rate-color: #ff1a1a;
+    --heart-rate-color: #9acd32;
     --muted: #666666;
     --card: rgba(0, 0, 0, 0.95);
     --border: rgba(255, 255, 255, 0.08);
@@ -79,7 +79,7 @@ body.style1 #bpm-display {
     font-size: clamp(80px, 20vw, 160px);
     font-weight: bold;
     color: var(--heart-rate-color);
-    text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+    text-shadow: 0 0 20px var(--heart-rate-color);
     line-height: 1;
 }
 
@@ -476,28 +476,59 @@ body.light-mode .top-bar {
 /* 心率显示样式 */
 .heart-rate-display.style-digital {
     font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    font-weight: 900;
+    background: linear-gradient(45deg, var(--heart-rate-color), rgba(255,255,255,0.1));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .heart-rate-display.style-analog {
     font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px var(--heart-rate-color);
 }
 
 .heart-rate-display.style-3d {
     font-family: 'Orbitron', sans-serif;
-    text-shadow: 0 0 20px rgba(255, 0, 51, 0.8), 0 0 40px rgba(255, 0, 51, 0.4), 0 0 60px rgba(255, 0, 51, 0.2);
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-shadow: 
+        0 0 10px var(--heart-rate-color),
+        0 0 20px var(--heart-rate-color),
+        0 0 30px var(--heart-rate-color),
+        0 0 40px var(--heart-rate-color),
+        0 0 50px var(--heart-rate-color),
+        0 0 60px var(--heart-rate-color),
+        0 0 70px var(--heart-rate-color);
+    transform: perspective(1000px) rotateX(5deg);
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: perspective(1000px) rotateX(5deg) translateY(0);
+    }
+    50% {
+        transform: perspective(1000px) rotateX(5deg) translateY(-5px);
+    }
 }
 
 .heart-rate-display.style-pulse {
     font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
     animation: pulseGlow 1s ease-in-out infinite;
+    letter-spacing: 2px;
 }
 
 @keyframes pulseGlow {
     0%, 100% {
-        text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+        text-shadow: 0 0 20px var(--heart-rate-color);
     }
     50% {
-        text-shadow: 0 0 40px rgba(255, 0, 51, 0.8), 0 0 60px rgba(255, 0, 51, 0.6);
+        text-shadow: 0 0 40px var(--heart-rate-color), 0 0 60px var(--heart-rate-color);
     }
 }
 
@@ -513,16 +544,21 @@ body.light-mode .top-bar {
     font-weight: 900;
     line-height: 1;
     color: var(--heart-rate-color);
-    text-shadow: 0 0 20px rgba(255, 0, 51, 0.5);
+    text-shadow: 0 0 20px var(--heart-rate-color);
 }
 
 #bpm-unit {
     font-family: 'Orbitron', sans-serif;
     font-size: 16px;
-    color: var(--muted);
+    color: var(--muted) !important;
     letter-spacing: 6px;
     margin-left: 10px;
     vertical-align: super;
+    text-shadow: none !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: var(--muted) !important;
+    background-clip: unset !important;
 }
 
 /* ECG 区域 */
@@ -2063,35 +2099,43 @@ body.dark-mode .theme-mode-option input[type="radio"]:checked + label {
 /* 背景类型选项 */
 .bg-type-options {
     display: flex;
-    gap: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .bg-type-option {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border: 2px solid transparent;
+    gap: 10px;
+    padding: 12px 20px;
+    border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: linear-gradient(145deg, var(--card), rgba(255, 255, 255, 0.05));
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .bg-type-option input[type="radio"] {
     accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
 }
 
 .bg-type-option:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.dark-mode .bg-type-option:hover {
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.3);
+    transform: translateY(-1px);
 }
 
 .bg-type-option input[type="radio"]:checked + span {
     color: var(--accent);
-    font-weight: 500;
+    font-weight: 700;
 }
 
 /* 背景图片控制 */
@@ -2328,7 +2372,7 @@ body.dark-mode .settings-select {
 /* 位置网格 */
 .position-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 12px;
 }
 
@@ -2336,36 +2380,43 @@ body.dark-mode .settings-select {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 12px;
-    border: 2px solid transparent;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
+    background: linear-gradient(145deg, var(--card), rgba(255, 255, 255, 0.05));
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .position-option input[type="radio"] {
     accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
 }
 
 .position-option:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-body.dark-mode .position-option:hover {
-    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.3);
+    transform: translateY(-1px);
 }
 
 .position-option input[type="radio"]:checked + span {
     color: var(--accent);
-    font-weight: 500;
+    font-weight: 700;
 }
 
 /* 样式选项 */
 .style-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
 }
 
@@ -2373,30 +2424,37 @@ body.dark-mode .position-option:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 16px;
-    border: 2px solid transparent;
+    gap: 10px;
+    padding: 20px;
+    border: 1px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: linear-gradient(145deg, var(--card), rgba(255, 255, 255, 0.05));
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
 }
 
 .style-option:hover {
-    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.3);
     transform: translateY(-2px);
-}
-
-body.dark-mode .style-option:hover {
-    background: rgba(255, 255, 255, 0.1);
 }
 
 .style-option input[type="radio"] {
     accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
 }
 
 .style-option input[type="radio"]:checked + span {
     color: var(--accent);
-    font-weight: 500;
+    font-weight: 700;
 }
 
 /* ECG网格控制 */
