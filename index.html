@@ -205,14 +205,19 @@
                         <label class="settings-label">粒子效果类型</label>
                         <div class="particle-effect-container">
                             <select id="particlesEffect" class="settings-select short">
-                                <option value="标准" selected>标准</option>
+                                <option value="标准">标准</option>
+                                <option value="星空1" selected>星空1</option>
+                                <option value="原始星空">原始星空</option>
+                                <option value="律动星空">律动星空</option>
                                 <option value="星云">星云</option>
+                                <option value="银河">银河</option>
+                                <option value="极光">极光</option>
                                 <option value="脉冲">脉冲</option>
                                 <option value="波浪">波浪</option>
-                                <option value="银河">银河</option>
+                                <option value="呼吸粒子">呼吸粒子</option>
                                 <option value="萤火虫">萤火虫</option>
-                                <option value="极光">极光</option>
                                 <option value="暴风雪">暴风雪</option>
+                                <option value="原始粒子云">原始粒子云</option>
                             </select>
                             <div class="particle-preview" id="particlePreview">
                                 <div class="preview-label">效果预览</div>
@@ -222,7 +227,11 @@
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">粒子颜色</label>
-                        <input type="color" id="particlesColor" value="#ff0033" class="color-picker">
+                        <div class="particle-color-controls">
+                            <input type="color" id="particlesColor" value="#ffffff" class="color-picker">
+                            <div class="particle-color-presets" id="particleColorPresets"></div>
+                            <div class="particle-color-additional" id="particleColorAdditional" style="display: none;"></div>
+                        </div>
                     </div>
                     <div class="settings-group">
                         <label class="settings-label">粒子数量</label>
@@ -236,6 +245,89 @@
                         <div class="range-control">
                             <input type="range" id="particlesSize" min="0.1" max="2" value="0.5" step="0.1" class="range-slider">
                             <input type="number" id="particlesSizeInput" min="0.1" max="2" value="0.5" step="0.1" class="range-input">
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">效果与心率绑定</label>
+                        <div class="effect-heart-rate-controls">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="effectHeartRateToggle" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">启用心率绑定</span>
+                            </label>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">绑定强度</label>
+                                <div class="range-control">
+                                    <input type="range" id="effectHeartRateIntensity" min="0.1" max="2" value="1" step="0.1" class="range-slider">
+                                    <input type="number" id="effectHeartRateIntensityInput" min="0.1" max="2" value="1" step="0.1" class="range-input">
+                                </div>
+                            </div>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">触发模式</label>
+                                <select id="effectHeartRateMode" class="settings-select">
+                                    <option value="pulse">心跳脉冲</option>
+                                    <option value="bpm">心率区间</option>
+                                    <option value="constant">持续效果</option>
+                                </select>
+                            </div>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">心率区间效果</label>
+                                <div class="heart-rate-ranges">
+                                    <div class="range-item">
+                                        <span class="range-label">低心率 (< 60 BPM)</span>
+                                        <select id="lowBpmEffect" class="settings-select">
+                                                <option value="calm">平静模式</option>
+                                                <option value="normal">标准模式</option>
+                                            </select>
+                                    </div>
+                                    <div class="range-item">
+                                        <span class="range-label">正常心率 (60-100 BPM)</span>
+                                        <select id="normalBpmEffect" class="settings-select">
+                                                <option value="normal">标准模式</option>
+                                                <option value="calm">平静模式</option>
+                                                <option value="energetic">活力模式</option>
+                                            </select>
+                                    </div>
+                                    <div class="range-item">
+                                        <span class="range-label">高心率 (> 100 BPM)</span>
+                                        <select id="highBpmEffect" class="settings-select">
+                                                <option value="alert">警告模式</option>
+                                                <option value="energetic">活力模式</option>
+                                            </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">发光效果</label>
+                                <div class="glow-settings">
+                                    <div class="glow-setting-item">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="glowEffectToggle" checked>
+                                            <span class="toggle-slider"></span>
+                                            <span class="toggle-label">发光效果</span>
+                                        </label>
+                                    </div>
+                                    <div class="glow-setting-item" style="margin-top: 8px;">
+                                        <span class="range-label">发光颜色</span>
+                                        <input type="color" id="glowColorPicker" value="#ff0000" class="color-picker">
+                                    </div>
+                                    <div class="glow-setting-item" style="margin-top: 8px;">
+                                        <span class="range-label">发光强度</span>
+                                        <div class="range-control">
+                                            <input type="range" id="glowIntensity" min="0.1" max="5" value="2" step="0.1" class="range-slider">
+                                            <input type="number" id="glowIntensityInput" min="0.1" max="5" value="2" step="0.1" class="range-input">
+                                        </div>
+                                    </div>
+                                    <div class="glow-setting-item" style="margin-top: 8px;">
+                                        <span class="range-label">发光模式</span>
+                                        <select id="glowModeSelect" class="settings-select">
+                                            <option value="all">整体</option>
+                                            <option value="partial">部分</option>
+                                            <option value="random">随机</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1953,6 +1953,113 @@ body.dark-mode .theme-mode-option input[type="radio"]:checked + label {
     border-color: var(--border);
 }
 
+/* 粒子颜色控制样式 */
+.particle-color-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.particle-color-presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.particle-color-preset {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.particle-color-preset:hover {
+    transform: scale(1.1);
+    border-color: var(--border);
+}
+
+.particle-color-preset.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.3);
+}
+
+.particle-color-additional {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+}
+
+.particle-color-additional h5 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--fg);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.particle-color-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.particle-color-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    min-width: 80px;
+}
+
+.particle-color-picker {
+    flex: 1;
+    max-width: 120px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.particle-color-picker:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(255, 26, 26, 0.1);
+}
+
+/* 效果与心率绑定控制 */
+.effect-heart-rate-controls {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.heart-rate-ranges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.range-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.range-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
 /* 背景类型选项 */
 .bg-type-options {
     display: flex;
@@ -2158,7 +2265,10 @@ body.dark-mode .range-slider:hover {
 }
 
 body.dark-mode .settings-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 16px !important;
 }
 
 .settings-select:hover {

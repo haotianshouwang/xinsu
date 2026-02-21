@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // 导入模块
-import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize } from './modules/three.js';
+import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize, setParticleMultiColors, setEffectHeartRateConfig, setParticlesEnabled } from './modules/three.js';
 import { initAudio, playHeartbeat, startAlarm, stopAlarm, setAudioEnabled, getAudioEnabled, getIsAlarming } from './modules/audio.js';
 import { setupConnectButtons, updateStatus as updateBluetoothStatus, updateConnectButtons as updateBluetoothButtons, updateHeartRateDisplay as updateBluetoothHeartRate, handleHeartRate as handleBluetoothHeartRate, onDisconnected as onBluetoothDisconnected, disconnect as disconnectBluetooth, getConnected } from './modules/bluetooth.js';
 import { registerHeartRateCallback, registerConnectionStatusCallback, getCurrentBPM, getLastDataTime, getPulseIntensity, setPulseIntensity, getLastBeatTime, setLastBeatTime } from './modules/heart-rate-manager.js';
@@ -22,6 +22,29 @@ let originalBgType = 'image'; // 存储原始背景类型
 let originalBgImage = 'images/bg1.jpg'; // 存储原始背景图片
 let originalBgColor = '#000000'; // 存储原始背景颜色
 let isNightModeBackground = false; // 标记是否为黑夜模式背景
+let currentMultiColors = {}; // 当前多颜色效果的颜色值
+// 上次切换效果的时间戳（用于防抖）
+let lastEffectChangeTime = 0;
+const effectChangeCooldown = 3000; // 3秒的冷却时间
+// 效果与心率绑定配置
+let effectHeartRateConfig = {
+    enabled: true, // 启用心率绑定
+    intensity: 1, // 绑定强度
+    mode: 'pulse', // 触发模式: pulse(心跳脉冲), bpm(心率区间), constant(持续效果)
+    lowBpmEffect: 'calm', // 低心率效果
+    normalBpmEffect: 'normal', // 正常心率效果
+    highBpmEffect: 'alert', // 高心率效果
+    glowEffect: true, // 启发光效果
+    glowColor: '#ff0000', // 发光颜色，默认红色
+    glowIntensity: 2.0, // 发光强度，默认2.0（增强紧张感）
+    glowMode: 'all' // 发光模式: all(整体), partial(部分), random(随机)
+};
+// 颜色独立设置标志
+let colorIndependenceFlags = {
+    particles: false, // 粒子颜色是否独立设置
+    heartRate: false, // 心率颜色是否独立设置
+    ecg: false // ECG颜色是否独立设置
+};
 
 // DOM元素
 let elements = {};
@@ -99,6 +122,9 @@ function init() {
     
     // 初始化Three.js
     initThree('canvas-container', currentStyle);
+    
+    // 初始化效果与心率绑定配置
+    setEffectHeartRateConfig(effectHeartRateConfig);
     
     // 默认将心率显示位置设置为左侧
     updateHeartRatePosition('left');
@@ -206,8 +232,16 @@ function animate(time) {
     
     // 心跳检测：只在有数据且不在报警状态时播放心跳声
     if (hasData && !getIsAlarming() && ecgValue > 0.6 && t - getLastBeatTime() > 0.5) {
+        let pulseIntensity = 1;
+        
+        // 根据效果与心率绑定配置调整脉冲强度
+        if (effectHeartRateConfig.enabled) {
+            pulseIntensity *= effectHeartRateConfig.intensity;
+        }
+        
+        // 无论心率绑定是否启用，都播放心跳音效和更新状态
         setLastBeatTime(t);
-        setPulseIntensity(1);
+        setPulseIntensity(pulseIntensity);
         
         playHeartbeat();
         
@@ -220,6 +254,61 @@ function animate(time) {
     
     // 脉冲衰减
     setPulseIntensity(getPulseIntensity() * 0.95);
+    
+    // 初始化效果参数
+    let effectIntensity = 1.0;
+    let effectSpeed = 1.0;
+    
+    // 根据心率区间调整效果（如果启用）
+    if (effectHeartRateConfig.enabled && effectHeartRateConfig.mode === 'bpm' && hasData) {
+        const bpm = getCurrentBPM();
+        
+        // 根据心率区间和选择的效果类型调整参数
+        let selectedEffect;
+        if (bpm < 60) {
+            selectedEffect = effectHeartRateConfig.lowBpmEffect;
+        } else if (bpm > 100) {
+            selectedEffect = effectHeartRateConfig.highBpmEffect;
+        } else {
+            selectedEffect = effectHeartRateConfig.normalBpmEffect;
+        }
+        
+        // 根据效果类型调整参数
+        switch (selectedEffect) {
+            case 'calm':
+                // 平静模式：节奏很慢，强度较低
+                effectIntensity = 0.5;
+                effectSpeed = 0.4;
+                break;
+            case 'normal':
+                // 标准模式：节奏适中，强度适中
+                effectIntensity = 1.0;
+                effectSpeed = 1.0;
+                break;
+            case 'energetic':
+                // 活力模式：节奏较快，强度较高
+                effectIntensity = 1.8;
+                effectSpeed = 1.6;
+                break;
+            case 'alert':
+                // 警告模式：节奏很快，强度很高
+                effectIntensity = 2.5;
+                effectSpeed = 2.0;
+                break;
+            default:
+                // 默认模式：标准参数
+                effectIntensity = 1.0;
+                effectSpeed = 1.0;
+                break;
+        }
+        
+        console.log('根据心率区间和效果类型调整效果:', {
+            bpm: bpm,
+            selectedEffect: selectedEffect,
+            effectIntensity: effectIntensity,
+            effectSpeed: effectSpeed
+        });
+    }
     
     // 警报检测：只有设备连接时才报警
     const hasRecentData = t - getLastDataTime() <= 5;
@@ -237,10 +326,14 @@ function animate(time) {
     }
     
     // 更新 Three.js
-    updateThree(time, getPulseIntensity());
+    // 当禁用心率绑定时，也禁用发光效果相关的动画
+    const pulseIntensity = getPulseIntensity();
+    // 只有在心率绑定启用时才应用脉冲强度
+    const finalPulseIntensity = effectHeartRateConfig.enabled ? pulseIntensity : 0;
+    updateThree(time, finalPulseIntensity, effectIntensity, effectSpeed);
     
     // 绘制 ECG
-    drawECG(currentStyle, getIsAlarming(), getPulseIntensity());
+    drawECG(currentStyle, getIsAlarming(), pulseIntensity);
     
     // 渲染 Three.js
     renderThree();
@@ -572,9 +665,33 @@ function setupSettings() {
                     document.body.style.setProperty('--accent-rgb', `${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}`);
                 }
                 
+                // 智能同步颜色：只有在没有独立设置过的情况下才同步
                 // 更新粒子效果颜色
-                if (window.setParticleColor) {
+                if (!colorIndependenceFlags.particles && window.setParticleColor) {
                     window.setParticleColor(color);
+                    // 更新粒子颜色选择器显示值
+                    const particlesColor = document.getElementById('particlesColor');
+                    if (particlesColor) {
+                        particlesColor.value = color;
+                    }
+                }
+                
+                // 更新心率颜色
+                if (!colorIndependenceFlags.heartRate) {
+                    const heartRateColor = document.getElementById('heartRateColor');
+                    if (heartRateColor) {
+                        heartRateColor.value = color;
+                        updateHeartRateColor(color);
+                    }
+                }
+                
+                // 更新ECG线条颜色
+                if (!colorIndependenceFlags.ecg) {
+                    const ecgLineColor = document.getElementById('ecgLineColor');
+                    if (ecgLineColor) {
+                        ecgLineColor.value = color;
+                        setEcgConfig({ lineColor: color });
+                    }
                 }
             }
         });
@@ -621,9 +738,11 @@ function setupSettings() {
                     document.body.style.setProperty('--accent', '#ff0033');
                     document.body.style.setProperty('--accent-rgb', '255, 0, 51');
                     
-                    // 重置粒子效果颜色
+                    // 重置粒子效果颜色，从粒子颜色选择器获取默认值
                     if (window.setParticleColor) {
-                        window.setParticleColor('#ff0033');
+                        const particlesColorInput = document.getElementById('particlesColor');
+                        const defaultColor = particlesColorInput ? particlesColorInput.value : '#ffffff';
+                        window.setParticleColor(defaultColor);
                     }
                 }
                 
@@ -730,9 +849,11 @@ function setupSettings() {
             // 初始化RGB值
             document.body.style.setProperty('--accent-rgb', '255, 0, 51');
             
-            // 初始化粒子效果颜色
+            // 初始化粒子效果颜色，从粒子颜色选择器获取默认值
             if (window.setParticleColor) {
-                window.setParticleColor('#ff0033');
+                const particlesColorInput = document.getElementById('particlesColor');
+                const defaultColor = particlesColorInput ? particlesColorInput.value : '#ffffff';
+                window.setParticleColor(defaultColor);
             }
         }
         
@@ -947,23 +1068,190 @@ function setupSettings() {
         });
     }
     
-    if (particlesEffect) {
-        particlesEffect.addEventListener('change', (e) => {
-            // 这里可以添加粒子效果选择的逻辑
-            console.log('粒子效果:', e.target.value);
-            setParticleEffect(e.target.value);
-            // 更新预览窗口效果
-            updatePreviewEffect(e.target.value);
-        });
+    // 粒子颜色预设
+    const particleColorPresets = [
+        { name: '红色', value: '#ff0033' },
+        { name: '蓝色', value: '#007bff' },
+        { name: '绿色', value: '#28a745' },
+        { name: '黄色', value: '#ffc107' },
+        { name: '紫色', value: '#6f42c1' },
+        { name: '粉色', value: '#e83e8c' },
+        { name: '青色', value: '#17a2b8' },
+        { name: '橙色', value: '#fd7e14' }
+    ];
+    
+    // 初始化粒子颜色预设按钮
+    function initParticleColorPresets() {
+        const presetsContainer = document.getElementById('particleColorPresets');
+        if (presetsContainer) {
+            presetsContainer.innerHTML = '';
+            particleColorPresets.forEach(preset => {
+                const presetBtn = document.createElement('div');
+                presetBtn.className = 'particle-color-preset';
+                presetBtn.style.backgroundColor = preset.value;
+                presetBtn.title = preset.name;
+                presetBtn.addEventListener('click', () => {
+                    particlesColor.value = preset.value;
+                    particlesColor.dispatchEvent(new Event('change'));
+                });
+                presetsContainer.appendChild(presetBtn);
+            });
+        }
     }
+    
+    // 多颜色效果的颜色配置
+    const multiColorEffects = {
+        '星云': ['主色', '辅助色'],
+        '波浪': ['主色', '辅助色'],
+        '银河': ['主色', '辅助色'],
+        '极光': ['主色', '辅助色', '第三色']
+    };
+    
+    // 更新多颜色控制按钮
+    function updateMultiColorControls(effectType) {
+        const additionalContainer = document.getElementById('particleColorAdditional');
+        if (!additionalContainer) return;
+        
+        // 检查是否是多颜色效果
+        if (multiColorEffects[effectType]) {
+            additionalContainer.style.display = 'block';
+            
+            // 获取当前粒子主色
+            const mainColor = document.getElementById('particlesColor').value;
+            
+            // 为不同效果设置默认辅助色
+            const defaultSecondaryColors = {
+                '星云': '#880088',
+                '波浪': '#00ffff',
+                '银河': '#ffff00',
+                '极光': '#00ffff'
+            };
+            
+            // 为不同效果设置默认第三色
+            const defaultTertiaryColors = {
+                '极光': '#8800ff'
+            };
+            
+            additionalContainer.innerHTML = `
+                <h5>效果颜色</h5>
+                ${multiColorEffects[effectType].map((colorName, index) => {
+                    let defaultValue = '#ff0033';
+                    if (index === 0) {
+                        // 主色使用当前粒子颜色
+                        defaultValue = mainColor;
+                    } else if (index === 1) {
+                        // 辅助色使用效果默认值
+                        defaultValue = defaultSecondaryColors[effectType] || '#ff0033';
+                    } else if (index === 2) {
+                        // 第三色使用效果默认值
+                        defaultValue = defaultTertiaryColors[effectType] || '#ff0033';
+                    }
+                    return `
+                        <div class="particle-color-row">
+                            <span class="particle-color-label">${colorName}</span>
+                            <input type="color" 
+                                   class="particle-color-picker"
+                                   id="particleColor${index + 1}"
+                                   value="${currentMultiColors[`color${index + 1}`] || defaultValue}">
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            
+            // 绑定多颜色控制事件
+            multiColorEffects[effectType].forEach((colorName, index) => {
+                const colorPicker = document.getElementById(`particleColor${index + 1}`);
+                if (colorPicker) {
+                    colorPicker.addEventListener('change', (e) => {
+                        currentMultiColors[`color${index + 1}`] = e.target.value;
+                        // 更新粒子效果
+                        updateParticleEffectWithMultiColors(effectType);
+                    });
+                }
+            });
+        } else {
+            additionalContainer.style.display = 'none';
+        }
+    }
+    
+    // 使用多颜色更新粒子效果
+function updateParticleEffectWithMultiColors(effectType) {
+    // 这里可以根据效果类型和当前多颜色值更新粒子效果
+    console.log('更新多颜色效果:', effectType, currentMultiColors);
+    // 设置多颜色配置
+    setParticleMultiColors(currentMultiColors);
+    // 重置粒子系统以应用新颜色
+    setParticleEffect(effectType);
+    // 更新预览窗口
+    updatePreviewEffect(effectType);
+}
+
+    // 初始化粒子颜色控制
+    initParticleColorPresets();
     
     if (particlesColor) {
         particlesColor.addEventListener('change', (e) => {
             // 这里可以添加粒子颜色的逻辑
             console.log('粒子颜色:', e.target.value);
             setParticleColor(e.target.value);
+            // 重置粒子系统以应用新颜色，确保渲染器能够立即反映变化
+            const currentEffect = document.getElementById('particlesEffect').value;
+            setParticleEffect(currentEffect);
+            // 更新预览窗口
+            updatePreviewEffect(currentEffect);
+            // 设置粒子颜色独立标志
+            colorIndependenceFlags.particles = true;
+            
+            // 如果当前是多颜色效果，更新多颜色控制中的主色
+            if (multiColorEffects[currentEffect]) {
+                // 重置当前多颜色配置，确保主色变化时更新辅助色
+                currentMultiColors = {};
+                updateMultiColorControls(currentEffect);
+            }
         });
     }
+    
+    // 绑定心率颜色输入事件
+    const heartRateColorInput = document.getElementById('heartRateColor');
+    if (heartRateColorInput) {
+        heartRateColorInput.addEventListener('change', (e) => {
+            console.log('心率颜色:', e.target.value);
+            updateHeartRateColor(e.target.value);
+            // 设置心率颜色独立标志
+            colorIndependenceFlags.heartRate = true;
+        });
+    }
+    
+    // 绑定ECG线条颜色输入事件
+    const ecgLineColorInput = document.getElementById('ecgLineColor');
+    if (ecgLineColorInput) {
+        ecgLineColorInput.addEventListener('change', (e) => {
+            console.log('ECG线条颜色:', e.target.value);
+            setEcgConfig({ lineColor: e.target.value });
+            // 设置ECG颜色独立标志
+            colorIndependenceFlags.ecg = true;
+        });
+    }
+    
+    // 监听粒子效果类型变化
+    if (particlesEffect) {
+        particlesEffect.addEventListener('change', (e) => {
+            const effectType = e.target.value;
+            // 这里可以添加粒子效果选择的逻辑
+            console.log('粒子效果:', effectType);
+            setParticleEffect(effectType);
+            // 重置当前多颜色配置，确保切换效果时使用新的默认值
+            currentMultiColors = {};
+            // 更新多颜色控制
+            updateMultiColorControls(effectType);
+            // 更新预览窗口效果
+            updatePreviewEffect(effectType);
+        });
+    }
+    
+    // 初始化时更新多颜色控制
+    const initialEffect = particlesEffect ? particlesEffect.value : '标准';
+    updateMultiColorControls(initialEffect);
     
     if (particlesCount) {
         particlesCount.addEventListener('input', (e) => {
@@ -975,6 +1263,9 @@ function setupSettings() {
             if (particlesCountInput) {
                 particlesCountInput.value = e.target.value;
             }
+            // 更新预览窗口
+            const currentEffect = document.getElementById('particlesEffect').value;
+            updatePreviewEffect(currentEffect);
         });
     }
     
@@ -990,6 +1281,9 @@ function setupSettings() {
             if (particlesCount) {
                 particlesCount.value = e.target.value;
             }
+            // 更新预览窗口
+            const currentEffect = document.getElementById('particlesEffect').value;
+            updatePreviewEffect(currentEffect);
         });
     }
     
@@ -1003,6 +1297,9 @@ function setupSettings() {
             if (particlesSizeInput) {
                 particlesSizeInput.value = e.target.value;
             }
+            // 更新预览窗口
+            const currentEffect = document.getElementById('particlesEffect').value;
+            updatePreviewEffect(currentEffect);
         });
     }
     
@@ -1018,6 +1315,134 @@ function setupSettings() {
             if (particlesSize) {
                 particlesSize.value = e.target.value;
             }
+            // 更新预览窗口
+            const currentEffect = document.getElementById('particlesEffect').value;
+            updatePreviewEffect(currentEffect);
+        });
+    }
+    
+    // 绑定效果与心率绑定控制事件
+    const effectHeartRateToggle = document.getElementById('effectHeartRateToggle');
+    if (effectHeartRateToggle) {
+        effectHeartRateToggle.addEventListener('change', (e) => {
+            effectHeartRateConfig.enabled = e.target.checked;
+            console.log('效果与心率绑定:', effectHeartRateConfig.enabled);
+        });
+    }
+    
+    const effectHeartRateIntensity = document.getElementById('effectHeartRateIntensity');
+    const effectHeartRateIntensityInput = document.getElementById('effectHeartRateIntensityInput');
+    if (effectHeartRateIntensity) {
+        effectHeartRateIntensity.addEventListener('input', (e) => {
+            effectHeartRateConfig.intensity = parseFloat(e.target.value);
+            if (effectHeartRateIntensityInput) {
+                effectHeartRateIntensityInput.value = e.target.value;
+            }
+            console.log('效果与心率绑定强度:', effectHeartRateConfig.intensity);
+        });
+    }
+    
+    if (effectHeartRateIntensityInput) {
+        effectHeartRateIntensityInput.addEventListener('input', (e) => {
+            effectHeartRateConfig.intensity = parseFloat(e.target.value);
+            if (effectHeartRateIntensity) {
+                effectHeartRateIntensity.value = e.target.value;
+            }
+            console.log('效果与心率绑定强度:', effectHeartRateConfig.intensity);
+        });
+    }
+    
+    const effectHeartRateMode = document.getElementById('effectHeartRateMode');
+    if (effectHeartRateMode) {
+        effectHeartRateMode.addEventListener('change', (e) => {
+            effectHeartRateConfig.mode = e.target.value;
+            console.log('效果与心率绑定模式:', effectHeartRateConfig.mode);
+            
+            // 当模式改变时，保持当前的心率区间效果不变
+            // 这样可以确保心率区间效果始终是心率绑定的表达效果，而不是粒子的效果类型
+            console.log('切换触发模式后，心率区间效果保持不变:', {
+                lowBpmEffect: effectHeartRateConfig.lowBpmEffect,
+                normalBpmEffect: effectHeartRateConfig.normalBpmEffect,
+                highBpmEffect: effectHeartRateConfig.highBpmEffect
+            });
+        });
+    }
+    
+    const lowBpmEffect = document.getElementById('lowBpmEffect');
+    if (lowBpmEffect) {
+        lowBpmEffect.addEventListener('change', (e) => {
+            effectHeartRateConfig.lowBpmEffect = e.target.value;
+            console.log('低心率效果:', effectHeartRateConfig.lowBpmEffect);
+        });
+    }
+    
+    const normalBpmEffect = document.getElementById('normalBpmEffect');
+    if (normalBpmEffect) {
+        normalBpmEffect.addEventListener('change', (e) => {
+            effectHeartRateConfig.normalBpmEffect = e.target.value;
+            console.log('正常心率效果:', effectHeartRateConfig.normalBpmEffect);
+        });
+    }
+    
+    const highBpmEffect = document.getElementById('highBpmEffect');
+    if (highBpmEffect) {
+        highBpmEffect.addEventListener('change', (e) => {
+            effectHeartRateConfig.highBpmEffect = e.target.value;
+            console.log('高心率效果:', effectHeartRateConfig.highBpmEffect);
+        });
+    }
+    
+    // 发光效果设置
+    const glowEffectToggle = document.getElementById('glowEffectToggle');
+    if (glowEffectToggle) {
+        glowEffectToggle.addEventListener('change', (e) => {
+            effectHeartRateConfig.glowEffect = e.target.checked;
+            console.log('发光效果:', effectHeartRateConfig.glowEffect);
+            setEffectHeartRateConfig(effectHeartRateConfig);
+        });
+    }
+    
+    const glowColorPicker = document.getElementById('glowColorPicker');
+    if (glowColorPicker) {
+        glowColorPicker.addEventListener('change', (e) => {
+            effectHeartRateConfig.glowColor = e.target.value;
+            console.log('发光颜色:', effectHeartRateConfig.glowColor);
+            setEffectHeartRateConfig(effectHeartRateConfig);
+        });
+    }
+    
+    const glowIntensity = document.getElementById('glowIntensity');
+    const glowIntensityInput = document.getElementById('glowIntensityInput');
+    if (glowIntensity) {
+        glowIntensity.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            effectHeartRateConfig.glowIntensity = value;
+            if (glowIntensityInput) {
+                glowIntensityInput.value = value;
+            }
+            console.log('发光强度:', effectHeartRateConfig.glowIntensity);
+            setEffectHeartRateConfig(effectHeartRateConfig);
+        });
+    }
+    if (glowIntensityInput) {
+        glowIntensityInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            effectHeartRateConfig.glowIntensity = value;
+            if (glowIntensity) {
+                glowIntensity.value = value;
+            }
+            console.log('发光强度:', effectHeartRateConfig.glowIntensity);
+            setEffectHeartRateConfig(effectHeartRateConfig);
+        });
+    }
+    
+    // 发光模式设置
+    const glowModeSelect = document.getElementById('glowModeSelect');
+    if (glowModeSelect) {
+        glowModeSelect.addEventListener('change', (e) => {
+            effectHeartRateConfig.glowMode = e.target.value;
+            console.log('发光模式:', effectHeartRateConfig.glowMode);
+            setEffectHeartRateConfig(effectHeartRateConfig);
         });
     }
     
@@ -1229,6 +1654,15 @@ function setupSettings() {
         if (canvasContainer) {
             canvasContainer.style.display = enabled ? 'block' : 'none';
         }
+        // 调用setParticlesEnabled函数，控制渲染器是否渲染
+        if (setParticlesEnabled) {
+            setParticlesEnabled(enabled);
+        }
+        // 当禁用粒子效果时，移除所有粒子
+        if (!enabled && resetParticles) {
+            const currentStyle = document.body.className.includes('style1') ? 'style1' : 'style2';
+            resetParticles(currentStyle);
+        }
         console.log('粒子效果已', enabled ? '启用' : '禁用');
     }
     
@@ -1249,9 +1683,33 @@ function setupSettings() {
                 document.body.style.setProperty('--accent-rgb', `${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}`);
             }
             
+            // 智能同步颜色：只有在没有独立设置过的情况下才同步
             // 更新粒子效果颜色
-            if (window.setParticleColor) {
+            if (!colorIndependenceFlags.particles && window.setParticleColor) {
                 window.setParticleColor(e.target.value);
+                // 更新粒子颜色选择器显示值
+                const particlesColor = document.getElementById('particlesColor');
+                if (particlesColor) {
+                    particlesColor.value = e.target.value;
+                }
+            }
+            
+            // 更新心率颜色
+            if (!colorIndependenceFlags.heartRate) {
+                const heartRateColor = document.getElementById('heartRateColor');
+                if (heartRateColor) {
+                    heartRateColor.value = e.target.value;
+                    updateHeartRateColor(e.target.value);
+                }
+            }
+            
+            // 更新ECG线条颜色
+            if (!colorIndependenceFlags.ecg) {
+                const ecgLineColor = document.getElementById('ecgLineColor');
+                if (ecgLineColor) {
+                    ecgLineColor.value = e.target.value;
+                    setEcgConfig({ lineColor: e.target.value });
+                }
             }
         });
     }
@@ -1620,8 +2078,22 @@ function initPreviewWindow() {
         function animate() {
             requestAnimationFrame(animate);
             
-            if (previewParticles && previewParticles.material.uniforms) {
-                previewParticles.material.uniforms.uTime.value += 0.01;
+            if (previewParticles) {
+                if (previewParticles.material.uniforms) {
+                    // ShaderMaterial材质（大部分效果）
+                    previewParticles.material.uniforms.uTime.value += 0.01;
+                    
+                    // 为律动星空效果添加脉冲动画
+                    if (previewParticles.material.uniforms.uPulse) {
+                        // 生成一个模拟的脉冲值，使律动星空效果看起来有动画
+                        previewParticles.material.uniforms.uPulse.value = Math.sin(Date.now() * 0.003) * 0.5 + 0.5;
+                    }
+                } else if (previewParticles.material instanceof THREE.PointsMaterial) {
+                    // PointsMaterial材质（如星空1效果）
+                    // 应用旋转效果，模拟动画
+                    previewParticles.rotation.y += 0.005;
+                    previewParticles.rotation.x += 0.002;
+                }
             }
             
             previewRenderer.render(previewScene, previewCamera);
@@ -1697,6 +2169,27 @@ function updatePreviewEffect(effectType) {
                 console.log('创建暴风雪效果');
                 previewParticles = createPreviewBlizzardEffect(particleCount);
                 break;
+            case '律动星空':
+                console.log('创建律动星空效果');
+                previewParticles = createPreviewRhythmStarsEffect(particleCount);
+                break;
+            case '呼吸粒子':
+                console.log('创建呼吸粒子效果');
+                previewParticles = createPreviewBreathingParticlesEffect(particleCount);
+                break;
+            case '原始星空':
+                console.log('创建原始星空效果');
+                previewParticles = createPreviewOriginalStarsEffect(particleCount);
+                break;
+            case '原始粒子云':
+                console.log('创建原始粒子云效果');
+                previewParticles = createPreviewOriginalParticlesEffect(particleCount);
+                break;
+            case '星空1':
+            case '样式1星空':
+                console.log('创建星空1效果');
+                previewParticles = createPreviewStyle1StarsEffect(particleCount);
+                break;
             case '标准':
             default:
                 console.log('创建标准星星效果');
@@ -1722,7 +2215,8 @@ function createPreviewStarsEffect(count) {
     const sizes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
     
-    const color1 = new THREE.Color('#ff0033');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(particlesColor);
     const color2 = new THREE.Color(0xffffff);
     
     for (let i = 0; i < count; i++) {
@@ -1804,8 +2298,9 @@ function createPreviewNebulaEffect(count) {
     const sizes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
     
-    const color1 = new THREE.Color('#ff0033');
-    const color2 = new THREE.Color('#880088');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(particlesColor);
+    const color2 = new THREE.Color(currentMultiColors.color2 || '#880088');
     
     for (let i = 0; i < count; i++) {
         const r = 50 * Math.cbrt(Math.random());
@@ -1880,7 +2375,8 @@ function createPreviewPulseEffect(count) {
     const colors = new Float32Array(count * 3);
     const phases = new Float32Array(count);
     
-    const color = new THREE.Color('#ff0033');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color = new THREE.Color(particlesColor);
     
     for (let i = 0; i < count; i++) {
         const r = 40 * Math.random();
@@ -1957,8 +2453,9 @@ function createPreviewWaveEffect(count) {
     const sizes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
     
-    const color1 = new THREE.Color('#ff0033');
-    const color2 = new THREE.Color('#00ffff');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(particlesColor);
+    const color2 = new THREE.Color(currentMultiColors.color2 || '#00ffff');
     
     for (let i = 0; i < count; i++) {
         const r = 50 * Math.random();
@@ -2031,8 +2528,9 @@ function createPreviewGalaxyEffect(count) {
     const sizes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
     
-    const color1 = new THREE.Color('#ff0033');
-    const color2 = new THREE.Color('#ffff00');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(particlesColor);
+    const color2 = new THREE.Color(currentMultiColors.color2 || '#ffff00');
     
     for (let i = 0; i < count; i++) {
         const radius = 60 * Math.sqrt(Math.random());
@@ -2108,7 +2606,8 @@ function createPreviewFirefliesEffect(count) {
     const colors = new Float32Array(count * 3);
     const flicker = new Float32Array(count);
     
-    const color = new THREE.Color('#ffff00');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ffff00';
+    const color = new THREE.Color(particlesColor);
     
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 75;
@@ -2189,8 +2688,10 @@ function createPreviewAuroraEffect(count) {
     const colors = new Float32Array(count * 3);
     const phases = new Float32Array(count);
     
-    const color1 = new THREE.Color('#ff0033');
-    const color2 = new THREE.Color('#00ffff');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(particlesColor);
+    const color2 = new THREE.Color(currentMultiColors.color2 || '#00ffff');
+    const color3 = new THREE.Color(currentMultiColors.color3 || '#8800ff');
     
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 100;
@@ -2265,7 +2766,8 @@ function createPreviewBlizzardEffect(count) {
     const colors = new Float32Array(count * 3);
     const velocities = new Float32Array(count * 3);
     
-    const color = new THREE.Color('#ffffff');
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ffffff';
+    const color = new THREE.Color(particlesColor);
     
     for (let i = 0; i < count; i++) {
         positions[i * 3] = (Math.random() - 0.5) * 100;
@@ -2338,6 +2840,338 @@ function createPreviewBlizzardEffect(count) {
         blending: THREE.AdditiveBlending
     });
     
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的律动星空效果
+function createPreviewRhythmStarsEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        
+        sizes[i] = Math.random() * 2 + 0.5;
+        
+        const colorChoice = Math.random();
+        if (colorChoice < 0.7) {
+            colors[i * 3] = 1;
+            colors[i * 3 + 1] = 1;
+            colors[i * 3 + 2] = 1;
+        } else if (colorChoice < 0.9) {
+            colors[i * 3] = 0.4;
+            colors[i * 3 + 1] = 0.4;
+            colors[i * 3 + 2] = 0.4;
+        } else {
+            colors[i * 3] = 1;
+            colors[i * 3 + 1] = 0.1;
+            colors[i * 3 + 2] = 0.1;
+        }
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            uniform float uPulse;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float dist = length(pos);
+                
+                float pulseWave = sin(dist * 0.05 - uTime * 3.0) * uPulse * 5.0;
+                pos += normalize(pos) * pulseWave;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (100.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的呼吸粒子效果
+function createPreviewBreathingParticlesEffect(count) {
+    const positions = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 30 + Math.random() * 20;
+        
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            uniform float uTime;
+            uniform float uPulse;
+            
+            void main() {
+                vec3 pos = position;
+                
+                float breathe = sin(uTime * 0.5) * 2.0;
+                pos *= 1.0 + breathe * 0.05;
+                pos *= 1.0 + uPulse * 0.3;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = 3.0 * (50.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= 0.3;
+                
+                vec3 color = vec3(0.5);
+                
+                gl_FragColor = vec4(color, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的原始星空效果
+function createPreviewOriginalStarsEffect(count) {
+    const positions = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const colors = new Float32Array(count * 3);
+    
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ffffff';
+    const baseColor = new THREE.Color(particlesColor);
+    const triggerColor = new THREE.Color('#ff0000'); // 固定红色触发颜色
+    
+    for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 100;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+        
+        sizes[i] = Math.random() * 2 + 0.5;
+        
+        const colorChoice = Math.random();
+        if (colorChoice < 0.7) {
+            colors[i * 3] = baseColor.r;
+            colors[i * 3 + 1] = baseColor.g;
+            colors[i * 3 + 2] = baseColor.b;
+        } else if (colorChoice < 0.9) {
+            colors[i * 3] = 0.4;
+            colors[i * 3 + 1] = 0.4;
+            colors[i * 3 + 2] = 0.4;
+        } else {
+            colors[i * 3] = triggerColor.r;
+            colors[i * 3 + 1] = triggerColor.g;
+            colors[i * 3 + 2] = triggerColor.b;
+        }
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aColor', new THREE.BufferAttribute(colors, 3));
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 }
+        },
+        vertexShader: `
+            attribute float size;
+            attribute vec3 aColor;
+            varying vec3 vColor;
+            uniform float uTime;
+            
+            void main() {
+                vColor = aColor;
+                
+                vec3 pos = position;
+                float dist = length(pos);
+                float pulseWave = sin(dist * 0.05 - uTime * 3.0) * 0.5 * 5.0;
+                pos += normalize(pos) * pulseWave;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = size * (90.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= 0.6;
+                
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的原始粒子云效果
+function createPreviewOriginalParticlesEffect(count) {
+    const positions = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 30 + Math.random() * 20;
+        
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ffffff';
+    const baseColor = new THREE.Color(particlesColor);
+    const triggerColor = new THREE.Color('#ff0000'); // 固定红色触发颜色
+    
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPulse: { value: 0 },
+            uBaseColor: { value: baseColor },
+            uTriggerColor: { value: triggerColor }
+        },
+        vertexShader: `
+            uniform float uTime;
+            uniform float uPulse;
+            
+            void main() {
+                vec3 pos = position;
+                
+                float breathe = sin(uTime * 0.5) * 2.0;
+                pos *= 1.0 + breathe * 0.05;
+                pos *= 1.0 + uPulse * 0.3;
+                
+                vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = 3.0 * (90.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            uniform float uPulse;
+            uniform vec3 uBaseColor;
+            uniform vec3 uTriggerColor;
+            
+            void main() {
+                float dist = length(gl_PointCoord - vec2(0.5));
+                if (dist > 0.5) discard;
+                
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                alpha *= 0.3;
+                
+                vec3 color = mix(uBaseColor, uTriggerColor, uPulse);
+                
+                gl_FragColor = vec4(color, alpha);
+            }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    
+    return new THREE.Points(geometry, material);
+}
+
+// 创建预览用的样式1星空效果
+function createPreviewStyle1StarsEffect(count) {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+
+    const particlesColor = document.getElementById('particlesColor')?.value || '#ff0033';
+    const color1 = new THREE.Color(0xffffff); // 白
+    const color2 = new THREE.Color(particlesColor); // 红
+
+    for (let i = 0; i < count; i++) {
+        // 随机分布在球体表面或内部
+        const r = 40 * Math.cbrt(Math.random()); // 半径分布
+        const theta = Math.random() * 2 * Math.PI;
+        const phi = Math.acos(2 * Math.random() - 1);
+
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+
+        // 颜色混合
+        const mixedColor = color1.clone().lerp(color2, Math.random()); // 完全响应颜色变化
+        colors[i * 3] = mixedColor.r;
+        colors[i * 3 + 1] = mixedColor.g;
+        colors[i * 3 + 2] = mixedColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        size: 0.5,
+        vertexColors: true,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        opacity: 0.8
+    });
+
     return new THREE.Points(geometry, material);
 }
 
