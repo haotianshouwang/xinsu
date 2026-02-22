@@ -16,24 +16,29 @@ button {
 
 /* 白天模式 */
 body.light-mode {
-    --bg: #ffffff;
-    --fg: #333333;
-    --accent: #ff0033;
-    --heart-rate-color: #9acd32;
-    --muted: #666666;
+    --bg: #f8f9fa;
+    --fg: #2c3e50;
+    --accent: #e74c3c;
+    --heart-rate-color: #27ae60;
+    --muted: #7f8c8d;
     --card: rgba(255, 255, 255, 0.95);
     --border: rgba(0, 0, 0, 0.1);
 }
 
 /* 夜间模式 */
 body.dark-mode {
-    --bg: #050505;
-    --fg: #ffffff;
-    --accent: #ff1a1a;
-    --heart-rate-color: #9acd32;
-    --muted: #666666;
-    --card: rgba(0, 0, 0, 0.95);
-    --border: rgba(255, 255, 255, 0.08);
+    --bg: #121212;
+    --fg: #e0e0e0;
+    --accent: #ff5722;
+    --heart-rate-color: #4caf50;
+    --muted: #9e9e9e;
+    --card: rgba(30, 30, 30, 0.95);
+    --border: rgba(255, 255, 255, 0.1);
+}
+
+/* 自动模式 - 根据系统设置自动切换 */
+body.auto-mode {
+    transition: all 0.5s ease;
 }
 
 /* 样式1 */
@@ -79,7 +84,7 @@ body.style1 #bpm-display {
     font-size: clamp(80px, 20vw, 160px);
     font-weight: bold;
     color: var(--heart-rate-color);
-    text-shadow: 0 0 20px var(--heart-rate-color);
+    text-shadow: none;
     line-height: 1;
 }
 
@@ -473,64 +478,117 @@ body.light-mode .top-bar {
     padding: 30px 0;
 }
 
-/* 心率显示样式 */
-.heart-rate-display.style-digital {
-    font-family: 'Orbitron', sans-serif;
+/* 心率显示样式 - 所有样式都应用到#bpm-display */
+
+/* 基础心率显示样式 - 所有样式共享 */
+.heart-rate-display #bpm-display {
+    font-size: clamp(80px, 20vw, 160px);
+    color: var(--heart-rate-color);
+    position: relative;
+    display: inline-block;
+    transition: transform 0.2s ease-out;
+    text-shadow: none;
+}
+
+/* 数字显示样式 */
+.heart-rate-display.style-digital #bpm-display {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 8px;
+    font-weight: 700;
+}
+
+/* 模拟表盘样式 */
+.heart-rate-display.style-analog #bpm-display {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-weight: 600;
     letter-spacing: 2px;
+    font-style: italic;
+}
+
+/* 3D效果样式 */
+.heart-rate-display.style-3d #bpm-display {
+    font-family: 'Orbitron', sans-serif;
     font-weight: 900;
-    background: linear-gradient(45deg, var(--heart-rate-color), rgba(255,255,255,0.1));
+    letter-spacing: 8px;
+    transform: perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px);
+}
+
+.heart-rate-display.style-3d #bpm-display::before {
+    content: attr(text);
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: -5px;
+    bottom: -5px;
+    color: rgba(0,0,0,0.3);
+    z-index: -1;
+    transform: translateZ(-100px);
+}
+
+/* 标准样式 */
+.heart-rate-display.style-pulse #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 4px;
+}
+
+/* 电子二极管效果样式 */
+.heart-rate-display.style-diode #bpm-display {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    font-weight: 900;
+    letter-spacing: 12px;
+    padding: 0 10px;
+}
+
+.heart-rate-display.style-diode #bpm-unit {
+    font-family: 'Orbitron', 'Courier New', monospace;
+    color: var(--heart-rate-color) !important;
+    font-size: 24px;
+    letter-spacing: 6px;
+    margin-left: 15px;
+}
+
+/* 霓虹效果样式 */
+.heart-rate-display.style-neon #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 12px;
+}
+
+/* 复古风格样式 */
+.heart-rate-display.style-retro #bpm-display {
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    font-weight: normal;
+    letter-spacing: 6px;
+}
+
+/* 未来科技样式 */
+.heart-rate-display.style-futuristic #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 8px;
+    background: linear-gradient(
+        90deg,
+        var(--heart-rate-color) 0%,
+        var(--heart-rate-color) 45%,
+        rgba(255,255,255,1) 50%,
+        var(--heart-rate-color) 55%,
+        var(--heart-rate-color) 100%
+    );
+    background-size: 200% 100%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.heart-rate-display.style-analog {
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px var(--heart-rate-color);
-}
-
-.heart-rate-display.style-3d {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    letter-spacing: 3px;
-    text-shadow: 
-        0 0 10px var(--heart-rate-color),
-        0 0 20px var(--heart-rate-color),
-        0 0 30px var(--heart-rate-color),
-        0 0 40px var(--heart-rate-color),
-        0 0 50px var(--heart-rate-color),
-        0 0 60px var(--heart-rate-color),
-        0 0 70px var(--heart-rate-color);
-    transform: perspective(1000px) rotateX(5deg);
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% {
-        transform: perspective(1000px) rotateX(5deg) translateY(0);
-    }
-    50% {
-        transform: perspective(1000px) rotateX(5deg) translateY(-5px);
-    }
-}
-
-.heart-rate-display.style-pulse {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    animation: pulseGlow 1s ease-in-out infinite;
+/* 极简风格样式 */
+.heart-rate-display.style-minimal #bpm-display {
+    font-family: 'Helvetica Neue', 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 200;
     letter-spacing: 2px;
 }
 
-@keyframes pulseGlow {
-    0%, 100% {
-        text-shadow: 0 0 20px var(--heart-rate-color);
-    }
-    50% {
-        text-shadow: 0 0 40px var(--heart-rate-color), 0 0 60px var(--heart-rate-color);
-    }
-}
+
 
 .heart-rate-display {
     text-align: center;
@@ -544,7 +602,7 @@ body.light-mode .top-bar {
     font-weight: 900;
     line-height: 1;
     color: var(--heart-rate-color);
-    text-shadow: 0 0 20px var(--heart-rate-color);
+    text-shadow: none;
 }
 
 #bpm-unit {
@@ -1894,7 +1952,7 @@ body.dark-mode .theme-mode-option input[type="radio"]:checked + label {
 
 .theme-mode-option label:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .theme-preview {
@@ -1903,21 +1961,42 @@ body.dark-mode .theme-mode-option input[type="radio"]:checked + label {
     border-radius: 8px;
     position: relative;
     overflow: hidden;
+    box-shadow: none;
 }
 
 .light-preview {
     background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: none;
 }
 
 .dark-preview {
     background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
 }
 
 .auto-preview {
-    background: linear-gradient(90deg, #ffffff 0%, #1a1a1a 100%);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 50%, #333333 51%, #000000 100%);
+    border: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.auto-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: autoModeShine 3s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes autoModeShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .theme-mode-option span {
@@ -2424,7 +2503,7 @@ body.dark-mode .settings-select {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 20px;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -2452,9 +2531,242 @@ body.dark-mode .settings-select {
     height: 16px;
 }
 
-.style-option input[type="radio"]:checked + span {
+.style-option input[type="radio"]:checked + div + span {
     color: var(--accent);
     font-weight: 700;
+}
+
+/* 样式预览容器 */
+.style-preview {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+/* 样式预览文本 */
+.style-preview span {
+    font-size: 24px;
+}
+
+/* 数字显示样式预览 */
+.style-digital-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+}
+
+.style-digital-preview span {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--heart-rate-color);
+}
+
+/* 模拟表盘样式预览 */
+.style-analog-preview {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-weight: 600;
+}
+
+.style-analog-preview span {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-style: italic;
+    color: var(--heart-rate-color);
+}
+
+/* 3D效果样式预览 */
+.style-3d-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+}
+
+.style-3d-preview span {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--heart-rate-color);
+    transform: perspective(500px) rotateX(10deg) rotateY(-3deg);
+    display: inline-block;
+}
+
+/* 标准样式预览 */
+.style-pulse-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+}
+
+.style-pulse-preview span {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--heart-rate-color);
+}
+
+/* 霓虹效果样式预览 */
+.style-neon-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+}
+
+.style-neon-preview span {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--heart-rate-color);
+}
+
+/* 复古风格样式预览 */
+.style-retro-preview {
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    font-weight: normal;
+}
+
+.style-retro-preview span {
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    font-weight: normal;
+    letter-spacing: 0;
+    color: var(--heart-rate-color);
+    font-size: 14px;
+}
+
+/* 未来科技样式预览 */
+.style-futuristic-preview {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    overflow: hidden;
+}
+
+.style-futuristic-preview span {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: 2px;
+    display: inline-block;
+    background: linear-gradient(
+        90deg,
+        var(--heart-rate-color) 0%,
+        rgba(255,255,255,1) 25%,
+        var(--heart-rate-color) 50%,
+        rgba(255,255,255,1) 75%,
+        var(--heart-rate-color) 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: futuristicSlide 2s linear infinite;
+}
+
+/* 极简风格样式预览 */
+.style-minimal-preview {
+    font-family: 'Helvetica Neue', 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 200;
+}
+
+.style-minimal-preview span {
+    font-family: 'Helvetica Neue', 'Segoe UI', 'Roboto', sans-serif;
+    font-weight: 200;
+    letter-spacing: 1px;
+    color: var(--heart-rate-color);
+}
+
+/* 电子二极管风格预览 */
+.style-diode-preview {
+    font-family: 'VT323', 'Courier New', Courier, monospace;
+    font-weight: normal;
+}
+
+.style-diode-preview span {
+    font-family: 'VT323', 'Courier New', Courier, monospace;
+    font-weight: normal;
+    letter-spacing: 4px;
+    color: var(--heart-rate-color);
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: 28px;
+}
+
+/* 脉冲动画 */
+
+
+/* 脉冲跳动动画 */
+@keyframes pulseJump {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* 霓虹闪烁动画 */
+@keyframes neonFlicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow: 
+            0 0 5px var(--heart-rate-color),
+            0 0 10px var(--heart-rate-color),
+            0 0 15px var(--heart-rate-color),
+            0 0 20px var(--heart-rate-color),
+            0 0 25px var(--heart-rate-color),
+            0 0 30px var(--heart-rate-color),
+            0 0 35px var(--heart-rate-color);
+    }
+    20%, 24%, 55% {
+        text-shadow: none;
+    }
+}
+
+/* 未来科技滑动动画 */
+@keyframes futuristicSlide {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+/* 未来科技脉冲动画 */
+@keyframes futuristicPulse {
+    0%, 100% {
+        text-shadow: 0 0 10px var(--heart-rate-color), 0 0 20px var(--heart-rate-color), 0 0 30px var(--heart-rate-color);
+    }
+    50% {
+        text-shadow: 0 0 15px var(--heart-rate-color), 0 0 30px var(--heart-rate-color), 0 0 45px var(--heart-rate-color), 0 0 60px var(--heart-rate-color);
+    }
+}
+
+/* 二极管闪烁动画 */
+@keyframes diodeFlicker {
+    0% {
+        opacity: 0.8;
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+    }
+    100% {
+        opacity: 1;
+        text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00, 0 0 45px #00ff00;
+    }
+}
+
+/* ECG网格控制 */
+.ecg-grid-controls {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+/* 波形参数 */
+.wave-params {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
 }
 
 /* ECG网格控制 */

@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
 
 // 导入模块
 import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize, setParticleMultiColors, setEffectHeartRateConfig, setParticlesEnabled } from './modules/three.js';
@@ -23,6 +23,12 @@ let originalBgImage = 'images/bg1.jpg'; // 存储原始背景图片
 let originalBgColor = '#000000'; // 存储原始背景颜色
 let isNightModeBackground = false; // 标记是否为黑夜模式背景
 let currentMultiColors = {}; // 当前多颜色效果的颜色值
+// 心跳联动效果配置
+let heartbeatEffectConfig = {
+    enabled: true,
+    type: 'all',
+    intensity: 1
+};
 // 上次切换效果的时间戳（用于防抖）
 let lastEffectChangeTime = 0;
 const effectChangeCooldown = 3000; // 3秒的冷却时间
@@ -82,11 +88,36 @@ function updateHeartRatePosition(position) {
 // 更新心率显示样式
 function updateHeartRateStyle(style) {
     const heartRateDisplay = document.querySelector('.heart-rate-display');
+    const bpmDisplay = document.getElementById('bpm-display');
     if (heartRateDisplay) {
         // 重置所有样式类
-        heartRateDisplay.classList.remove('style-digital', 'style-analog', 'style-3d', 'style-pulse');
+        heartRateDisplay.classList.remove('style-digital', 'style-analog', 'style-3d', 'style-pulse', 'style-neon', 'style-retro', 'style-futuristic', 'style-minimal', 'style-diode');
         // 添加新的样式类
         heartRateDisplay.classList.add(`style-${style}`);
+        
+        // 清除之前的内联样式（除了3D效果）
+        if (bpmDisplay) {
+            if (style === '3d') {
+                // 3D效果保留CSS的transform，只清除textShadow
+                bpmDisplay.style.textShadow = '';
+                // 确保3D的transform是正确的
+                bpmDisplay.style.transform = 'perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px)';
+            } else {
+                // 其他样式清除所有内联样式
+                bpmDisplay.style.textShadow = '';
+                bpmDisplay.style.transform = '';
+            }
+        }
+        
+        // 样式切换后重新应用发光效果（所有样式都应用）
+        setTimeout(() => {
+            const glowEnabled = document.getElementById('hrGlowEffectToggle')?.checked || false;
+            if (glowEnabled && bpmDisplay) {
+                const color = document.getElementById('hrGlowColorPicker')?.value || '#9acd32';
+                const intensity = parseFloat(document.getElementById('hrGlowIntensity')?.value || '1');
+                applyHeartRateGlow(bpmDisplay, color, intensity);
+            }
+        }, 10);
     }
 }
 
@@ -108,51 +139,131 @@ function updateHeartRateSize(size) {
     }
 }
 
-// 更新心率发光效果
+// 更新心率发光效果 - 所有样式都由JavaScript控制发光
 function updateHeartRateGlow(enabled) {
-    console.log('updateHeartRateGlow called with enabled:', enabled);
     const bpmDisplay = document.getElementById('bpm-display');
-    console.log('bpmDisplay element:', bpmDisplay);
     if (bpmDisplay) {
+        const intensity = parseFloat(document.getElementById('hrGlowIntensity')?.value || '1');
+        const color = document.getElementById('hrGlowColorPicker')?.value || '#9acd32';
+        
         if (enabled) {
-            console.log('Enabling glow effect');
-            bpmDisplay.style.textShadow = `0 0 20px var(--heart-rate-color), 0 0 40px var(--heart-rate-color), 0 0 60px var(--heart-rate-color)`;
+            applyHeartRateGlow(bpmDisplay, color, intensity);
         } else {
-            console.log('Disabling glow effect');
-            // 完全移除发光效果
-            bpmDisplay.style.textShadow = 'none';
+            bpmDisplay.style.textShadow = '';
         }
     }
 }
 
-// 更新心率发光颜色
+// 更新心率发光颜色 - 所有样式都由JavaScript控制发光
 function updateHeartRateGlowColor(color) {
-    document.body.style.setProperty('--heart-rate-glow-color', color);
     const bpmDisplay = document.getElementById('bpm-display');
     if (bpmDisplay) {
         const glowEnabled = document.getElementById('hrGlowEffectToggle')?.checked || false;
+        const intensity = parseFloat(document.getElementById('hrGlowIntensity')?.value || '1');
+        
         if (glowEnabled) {
-            bpmDisplay.style.textShadow = `0 0 20px ${color}, 0 0 40px ${color}, 0 0 60px ${color}`;
-        } else {
-            bpmDisplay.style.textShadow = 'none';
+            applyHeartRateGlow(bpmDisplay, color, intensity);
         }
     }
 }
 
-// 更新心率发光强度
+// 更新心率发光强度 - 所有样式都由JavaScript控制发光
 function updateHeartRateGlowIntensity(intensity) {
     const bpmDisplay = document.getElementById('bpm-display');
     if (bpmDisplay) {
         const color = document.getElementById('hrGlowColorPicker')?.value || '#9acd32';
         const glowEnabled = document.getElementById('hrGlowEffectToggle')?.checked || false;
+        
         if (glowEnabled) {
-            const blur1 = 20 * intensity;
-            const blur2 = 40 * intensity;
-            const blur3 = 60 * intensity;
-            bpmDisplay.style.textShadow = `0 0 ${blur1}px ${color}, 0 0 ${blur2}px ${color}, 0 0 ${blur3}px ${color}`;
-        } else {
-            bpmDisplay.style.textShadow = 'none';
+            applyHeartRateGlow(bpmDisplay, color, intensity);
         }
+    }
+}
+
+// 应用发光效果的核心函数 - 统一所有样式的发光效果
+function applyHeartRateGlow(element, color, intensity) {
+    // 限制强度最大为1
+    intensity = Math.min(intensity, 1);
+    // 统一发光效果参数
+    const blur1 = 2 * intensity;
+    const blur2 = 4 * intensity;
+    const blur3 = 8 * intensity;
+    
+    // 多层发光，模拟辉光效果，确保在文字后面
+    // 所有样式统一使用相同的发光效果
+    element.style.textShadow = `0 0 ${blur1}px ${color}, 
+                                 0 0 ${blur2}px ${color}, 
+                                 0 0 ${blur3}px ${color}`;
+    
+    // 确保文字颜色不被影响，统一使用计算样式的颜色
+    element.style.color = getComputedStyle(element).color;
+    
+    // 确保所有样式都有相同的发光效果图层顺序和过渡效果
+    element.style.position = 'relative';
+    element.style.display = 'inline-block';
+    element.style.transition = 'transform 0.2s ease-out, text-shadow 0.3s ease';
+}
+
+// 更新心率心跳联动效果 - 统一所有样式的联动效果
+function updateHeartRateBeatEffect(intensity) {
+    if (!heartbeatEffectConfig.enabled) return;
+    
+    const bpmDisplay = document.getElementById('bpm-display');
+    const heartRateDisplay = document.querySelector('.heart-rate-display');
+    if (bpmDisplay && heartRateDisplay) {
+        const effectIntensity = intensity * heartbeatEffectConfig.intensity;
+        const effectType = heartbeatEffectConfig.type || 'pulse';
+        
+        // 检查样式类型
+        const is3DStyle = heartRateDisplay.classList.contains('style-3d');
+        const isFuturisticStyle = heartRateDisplay.classList.contains('style-futuristic');
+        
+        if (effectIntensity > 0.2) {
+            // 心跳时的动画效果 - 根据效果类型应用不同效果
+            if (effectType === 'scale') {
+                // 缩放效果 - 所有样式统一应用
+                const scaleValue = 1 + effectIntensity * 0.3;
+                if (is3DStyle) {
+                    // 3D样式时，保留原来的perspective和rotate，只添加缩放
+                    bpmDisplay.style.transform = `perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px) scale(${scaleValue})`;
+                } else if (isFuturisticStyle) {
+                    // 未来科技样式，保持背景渐变效果
+                    bpmDisplay.style.transform = `scale(${scaleValue})`;
+                } else {
+                    // 其他所有样式都应用缩放
+                    bpmDisplay.style.transform = `scale(${scaleValue})`;
+                }
+                bpmDisplay.style.transition = 'transform 0.2s ease-out';
+            } else {
+                // 脉冲效果 - 所有样式统一应用
+                const scaleValue = 1 + effectIntensity * 0.25;
+                if (is3DStyle) {
+                    // 3D样式时，保留原来的perspective和rotate，只添加缩放
+                    bpmDisplay.style.transform = `perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px) scale(${scaleValue})`;
+                } else if (isFuturisticStyle) {
+                    // 未来科技样式，保持背景渐变效果
+                    bpmDisplay.style.transform = `scale(${scaleValue})`;
+                } else {
+                    // 其他所有样式都应用缩放
+                    bpmDisplay.style.transform = `scale(${scaleValue})`;
+                }
+                bpmDisplay.style.transition = 'transform 0.15s ease-out';
+            }
+        } else {
+            // 恢复正常状态 - 所有样式统一恢复
+            if (is3DStyle) {
+                // 3D样式时，恢复原来的perspective和rotate
+                bpmDisplay.style.transform = 'perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px)';
+            } else if (isFuturisticStyle) {
+                // 未来科技样式，保持背景渐变效果
+                bpmDisplay.style.transform = 'scale(1)';
+            } else {
+                // 其他所有样式只缩放回1
+                bpmDisplay.style.transform = 'scale(1)';
+            }
+            bpmDisplay.style.transition = 'transform 0.4s ease-out';
+        }
+        // 不修改textShadow和boxShadow，让发光效果完全独立控制
     }
 }
 
@@ -387,6 +498,9 @@ function animate(time) {
     // 绘制 ECG
     drawECG(currentStyle, getIsAlarming(), pulseIntensity);
     
+    // 心跳节奏联动效果
+    updateHeartRateBeatEffect(pulseIntensity);
+    
     // 渲染 Three.js
     renderThree();
 }
@@ -557,6 +671,13 @@ function setupSettings() {
                         sectionElement.style.display = s === section ? 'block' : 'none';
                     }
                 });
+                
+                // 如果切换到视觉效果部分，重新初始化预览窗口
+                if (section === 'effects') {
+                    setTimeout(() => {
+                        initPreviewWindow();
+                    }, 100);
+                }
             }
         });
     });
@@ -621,15 +742,46 @@ function setupSettings() {
                 // 自动模式：根据系统设置
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 if (prefersDark) {
+                    // 自动模式下的深色模式
                     document.body.classList.remove('light-mode');
                     document.body.classList.add('dark-mode');
                     currentMode = 'dark';
+                    
+                    // 应用深色模式背景
+                    if (!isNightModeBackground) {
+                        originalBgType = currentBgType;
+                        originalBgImage = currentBgImage;
+                        originalBgColor = currentBgColor;
+                        isNightModeBackground = true;
+                    }
+                    currentBgType = 'color';
+                    currentBgColor = '#121212'; // 使用新的深色模式背景色
+                    document.body.style.background = currentBgColor;
+                    updateBackgroundColor(currentBgColor);
+                    updateBgTypeUI('color');
                 } else {
+                    // 自动模式下的浅色模式
                     document.body.classList.remove('dark-mode');
                     document.body.classList.add('light-mode');
                     currentMode = 'light';
+                    
+                    // 恢复原始背景设置
+                    if (isNightModeBackground) {
+                        currentBgType = originalBgType;
+                        currentBgImage = originalBgImage;
+                        currentBgColor = originalBgColor;
+                        isNightModeBackground = false;
+                    }
+                    // 重新应用背景
+                    if (currentBgType === 'image' && currentBgImage) {
+                        document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
+                    } else if (currentBgType === 'color') {
+                        document.body.style.background = currentBgColor;
+                    }
+                    updateBackgroundColor();
+                    updateBgTypeUI(currentBgType);
                 }
-                console.log('自动模式 - 当前模式:', currentMode);
+                console.log('自动模式 - 当前模式:', currentMode, '背景类型:', currentBgType);
             }
             // 同步按钮UI
             updateButtonUI();
@@ -697,6 +849,44 @@ function setupSettings() {
             updateHeartRateStyle(style);
         });
     });
+    
+    // 绑定心跳联动效果设置事件
+    const heartbeatEffectToggle = document.getElementById('heartbeatEffectToggle');
+    const heartbeatEffectType = document.getElementById('heartbeatEffectType');
+    const heartbeatEffectIntensity = document.getElementById('heartbeatEffectIntensity');
+    const heartbeatEffectIntensityInput = document.getElementById('heartbeatEffectIntensityInput');
+    
+    if (heartbeatEffectToggle) {
+        heartbeatEffectToggle.addEventListener('change', (e) => {
+            heartbeatEffectConfig.enabled = e.target.checked;
+        });
+    }
+    
+    if (heartbeatEffectType) {
+        heartbeatEffectType.addEventListener('change', (e) => {
+            heartbeatEffectConfig.type = e.target.value;
+        });
+    }
+    
+    if (heartbeatEffectIntensity) {
+        heartbeatEffectIntensity.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            heartbeatEffectConfig.intensity = value;
+            if (heartbeatEffectIntensityInput) {
+                heartbeatEffectIntensityInput.value = value;
+            }
+        });
+    }
+    
+    if (heartbeatEffectIntensityInput) {
+        heartbeatEffectIntensityInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            heartbeatEffectConfig.intensity = value;
+            if (heartbeatEffectIntensity) {
+                heartbeatEffectIntensity.value = value;
+            }
+        });
+    }
     
     // 绑定心率颜色变更事件
     const heartRateColor = document.getElementById('heartRateColor');
@@ -967,7 +1157,6 @@ function setupSettings() {
         
         if (hrGlowColorPicker) {
             hrGlowColorPicker.value = '#9acd32';
-            updateHeartRateGlowColor('#9acd32');
         }
         
         if (hrGlowIntensity) {
@@ -975,8 +1164,10 @@ function setupSettings() {
             if (hrGlowIntensityInput) {
                 hrGlowIntensityInput.value = '1';
             }
-            updateHeartRateGlowIntensity(1);
         }
+        
+        // 最后应用发光效果
+        updateHeartRateGlow(true);
         
         // 设置默认字体大小为 120px
         const heartRateSize = document.getElementById('heartRateSize');

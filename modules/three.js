@@ -32,7 +32,7 @@ let effectHeartRateConfig = {
     highBpmEffect: 'pulse',
     glowEffect: true, // 启发光效果
     glowColor: '#ff0000', // 发光颜色，默认红色
-    glowIntensity: 1.0, // 发光强度，默认1.0
+    glowIntensity: 2.0, // 发光强度，默认2.0（增强紧张感）
     glowMode: 'all', // 发光模式: all(整体), partial(部分), random(随机)
     effectIntensity: 1.0, // 效果强度
     effectSpeed: 1.0 // 效果节奏
@@ -130,6 +130,7 @@ function initThree(containerId, currentStyle) {
     }
 
     scene = new THREE.Scene();
+    console.log('Three.js场景初始化完成');
     
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 50;
@@ -155,11 +156,12 @@ function initThree(containerId, currentStyle) {
     }
     
     // 根据配置创建粒子效果
+    console.log('初始化粒子效果:', particleConfig.效果);
     stars = createParticlesByEffect(particleConfig.效果);
     
     window.addEventListener('resize', onWindowResize);
     
-    log(LOG_MODULES.THREE, `Three.js 初始化完成，样式: style1, 效果: ${particleConfig.效果}, 颜色: ${particleConfig.color}`, 'detailed');
+    log(LOG_MODULES.THREE, `Three.js 初始化完成，样式: ${currentStyle}, 效果: ${particleConfig.效果}, 颜色: ${particleConfig.color}`, 'detailed');
 }
 
 // 创建不同类型的粒子效果
@@ -2114,21 +2116,36 @@ function resetParticles(style) {
     }
     
     // 只有在粒子效果启用时才创建新的粒子效果
-    if (particlesEnabled) {
+    if (particlesEnabled && scene) {
         stars = createParticlesByEffect(particleConfig.效果);
     }
     
-    log(LOG_MODULES.THREE, `重置粒子系统，样式: style1, 效果: ${particleConfig.效果}, 状态: ${particlesEnabled ? '启用' : '禁用'}`, 'detailed');
+    log(LOG_MODULES.THREE, `重置粒子系统，样式: ${style}, 效果: ${particleConfig.效果}, 状态: ${particlesEnabled ? '启用' : '禁用'}`, 'detailed');
 }
 
 // 设置粒子效果
 function setParticleEffect(effect) {
     particleConfig.效果 = effect;
-    // 重置粒子系统以应用新效果
-    if (scene) {
-        const currentStyle = document.body.className.includes('style1') ? 'style1' : 'style2';
-        resetParticles(currentStyle);
+    console.log('设置粒子效果:', effect);
+    
+    // 移除现有的粒子系统
+    if (stars) {
+        scene.remove(stars);
+        stars.geometry.dispose();
+        stars.material.dispose();
+        stars = null;
+        console.log('移除旧的粒子系统');
     }
+    
+    // 创建新的粒子系统
+    if (scene) {
+        console.log('创建新的粒子系统，效果:', effect);
+        stars = createParticlesByEffect(effect);
+        console.log('新的粒子系统创建完成');
+    } else {
+        console.log('Scene不存在，无法创建新的粒子系统');
+    }
+    
     log(LOG_MODULES.THREE, `设置粒子效果: ${effect}`, 'detailed');
 }
 

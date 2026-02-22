@@ -15,7 +15,7 @@
       }
     }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;600&family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="style1 light-mode">
@@ -357,19 +357,66 @@
                         <div class="style-options">
                             <label class="style-option">
                                 <input type="radio" name="hr-style" value="digital">
+                                <div class="style-preview style-digital-preview">
+                                    <span>120</span>
+                                </div>
                                 <span>数字显示</span>
                             </label>
                             <label class="style-option">
                                 <input type="radio" name="hr-style" value="analog">
+                                <div class="style-preview style-analog-preview">
+                                    <span>120</span>
+                                </div>
                                 <span>模拟表盘</span>
                             </label>
                             <label class="style-option">
                                 <input type="radio" name="hr-style" value="3d">
+                                <div class="style-preview style-3d-preview">
+                                    <span>120</span>
+                                </div>
                                 <span>3D效果</span>
                             </label>
                             <label class="style-option">
                                 <input type="radio" name="hr-style" value="pulse" checked>
-                                <span>脉冲效果</span>
+                                <div class="style-preview style-pulse-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>标准样式</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="neon">
+                                <div class="style-preview style-neon-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>霓虹效果</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="retro">
+                                <div class="style-preview style-retro-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>复古风格</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="futuristic">
+                                <div class="style-preview style-futuristic-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>未来科技</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="minimal">
+                                <div class="style-preview style-minimal-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>极简风格</span>
+                            </label>
+                            <label class="style-option">
+                                <input type="radio" name="hr-style" value="diode">
+                                <div class="style-preview style-diode-preview">
+                                    <span>120</span>
+                                </div>
+                                <span>电子二极管</span>
                             </label>
                         </div>
                     </div>
@@ -394,8 +441,8 @@
                             <div class="glow-setting-item" style="margin-top: 12px;">
                                 <label class="settings-label">发光强度</label>
                                 <div class="range-control">
-                                    <input type="range" id="hrGlowIntensity" min="0.1" max="3" value="1" step="0.1" class="range-slider">
-                                    <input type="number" id="hrGlowIntensityInput" min="0.1" max="3" value="1" step="0.1" style="width: 80px;">
+                                    <input type="range" id="hrGlowIntensity" min="0.1" max="1" value="0.8" step="0.1" class="range-slider">
+                                    <input type="number" id="hrGlowIntensityInput" min="0.1" max="1" value="0.8" step="0.1" class="range-input">
                                 </div>
                             </div>
                         </div>
@@ -404,7 +451,31 @@
                         <label class="settings-label">字体大小</label>
                         <div class="range-control">
                             <input type="range" id="heartRateSize" min="40" max="200" value="120" step="10" class="range-slider">
-                            <input type="number" id="heartRateSizeInput" min="40" max="200" value="120" step="10" style="width: 80px;">
+                            <input type="number" id="heartRateSizeInput" min="40" max="200" value="120" step="10" class="range-input">
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">心跳联动效果</label>
+                        <div class="heartbeat-effect-options">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="heartbeatEffectToggle" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">启用心跳联动</span>
+                            </label>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">联动效果类型</label>
+                                <select id="heartbeatEffectType" class="settings-select">
+                                    <option value="pulse">脉冲效果</option>
+                                    <option value="scale">缩放效果</option>
+                                </select>
+                            </div>
+                            <div class="settings-group" style="margin-top: 12px;">
+                                <label class="settings-label">联动强度</label>
+                                <div class="range-control">
+                                    <input type="range" id="heartbeatEffectIntensity" min="0.1" max="2" value="1" step="0.1" class="range-slider">
+                                    <input type="number" id="heartbeatEffectIntensityInput" min="0.1" max="2" value="1" step="0.1" class="range-input">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
