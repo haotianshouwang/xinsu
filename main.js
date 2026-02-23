@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
 
 // 导入模块
 import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize, setParticleMultiColors, setEffectHeartRateConfig, setParticlesEnabled } from './modules/three.js';
@@ -184,20 +184,32 @@ function updateHeartRateGlowIntensity(intensity) {
 function applyHeartRateGlow(element, color, intensity) {
     // 限制强度最大为1
     intensity = Math.min(intensity, 1);
-    // 统一发光效果参数
-    const blur1 = 2 * intensity;
-    const blur2 = 4 * intensity;
-    const blur3 = 8 * intensity;
     
-    // 多层发光，模拟辉光效果，确保在文字后面
-    // 所有样式统一使用相同的发光效果
-    element.style.textShadow = `0 0 ${blur1}px ${color}, 
-                                 0 0 ${blur2}px ${color}, 
-                                 0 0 ${blur3}px ${color}`;
+    // 检查父元素是否有霓虹样式
+    const parentElement = element.parentElement;
+    const isNeon = parentElement && parentElement.classList.contains('style-neon');
     
-    // 确保文字颜色不被影响，统一使用计算样式的颜色
-    element.style.color = getComputedStyle(element).color;
+    if (isNeon) {
+        // 对于霓虹样式，使用适当的辉光效果，使其可见但不模糊
+        const minimalBlur = 2 * intensity;
+        element.style.textShadow = `0 0 ${minimalBlur}px ${color}`;
+    } else {
+        // 统一发光效果参数，使用更柔和的设置
+        const blur1 = 3 * intensity;
+        const blur2 = 6 * intensity;
+        const blur3 = 9 * intensity;
+        
+        // 为其他样式使用非常柔和的发光效果，确保在字体后面发光
+        // 从外到内：外层模糊大透明度低，内层模糊小透明度高
+        // 这样可以创建在字体后面的柔和辉光效果
+        element.style.textShadow = `
+            0 0 ${blur3}px ${color}20, 
+            0 0 ${blur2}px ${color}30, 
+            0 0 ${blur1}px ${color}40
+        `;
+    }
     
+    // 不要覆盖颜色，保留各样式的原始颜色效果
     // 确保所有样式都有相同的发光效果图层顺序和过渡效果
     element.style.position = 'relative';
     element.style.display = 'inline-block';

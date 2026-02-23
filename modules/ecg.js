@@ -1,8 +1,12 @@
 // ECG 相关变量
 export const ecgData = [];
-export const ecgMaxPoints = 300;
+export const ecgMaxPoints = 600; // 增加点数以获得更平滑的波形
 export let ecgCanvas = null;
 export let ecgCtx = null;
+let currentScanX = 0; // 当前扫描位置
+let lastScanX = 0; // 上一次的扫描位置
+const scanSpeed = 2.0; // 扫描速度（像素/帧）
+let ecgBuffer = []; // ECG数据缓冲区
 
 // 导入日志管理模块
 import { log, LOG_MODULES } from './logger.js';
@@ -13,7 +17,7 @@ let ecgConfig = {
     预设: '默认',
     效果: '标准',
     gridColor: '#ffff00',
-    gridOpacity: 0.1,
+    gridOpacity: 1,
     lineColor: '#ff0033',
     lineWidth: 2,
     pWave: 0.15,
@@ -133,6 +137,44 @@ const ecgStyles = {
     }
 };
 
+// 更新ECG网格样式
+function updateEcgGridStyle() {
+    const gridElement = document.querySelector('.ecg-grid');
+    const wrapperElement = document.querySelector('.ecg-wrapper');
+    if (gridElement) {
+        const color = ecgConfig.gridColor || '#ffff00';
+        let opacity = ecgConfig.gridOpacity;
+        if (opacity === undefined || opacity === null) opacity = 1;
+        
+        // 将十六进制颜色转换为RGBA
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        
+        if (opacity <= 0) {
+            // 透明度为0时完全隐藏网格
+            gridElement.style.backgroundImage = 'none';
+            // 同时隐藏wrapper的边框
+            if (wrapperElement) {
+                wrapperElement.style.borderTop = 'none';
+                wrapperElement.style.borderBottom = 'none';
+            }
+        } else {
+            // 正常显示网格
+            gridElement.style.backgroundImage = `
+                linear-gradient(rgba(${r}, ${g}, ${b}, ${opacity}) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(${r}, ${g}, ${b}, ${opacity}) 1px, transparent 1px)
+            `;
+            gridElement.style.backgroundPosition = '0 0, 0 0';
+            // wrapper的边框使用网格颜色
+            if (wrapperElement) {
+                wrapperElement.style.borderTop = `1px solid rgba(${r}, ${g}, ${b}, ${opacity})`;
+                wrapperElement.style.borderBottom = `1px solid rgba(${r}, ${g}, ${b}, ${opacity})`;
+            }
+        }
+    }
+}
+
 // 设置ECG配置
 export function setEcgConfig(config) {
     ecgConfig = { ...ecgConfig, ...config };
@@ -150,6 +192,9 @@ export function setEcgConfig(config) {
     if (config.gridOpacity !== undefined) ecgConfig.gridOpacity = config.gridOpacity;
     if (config.lineColor !== undefined) ecgConfig.lineColor = config.lineColor;
     if (config.lineWidth !== undefined) ecgConfig.lineWidth = config.lineWidth;
+    
+    // 更新网格样式
+    updateEcgGridStyle();
 }
 
 // 获取ECG配置
@@ -185,6 +230,9 @@ export function initECG(currentStyle) {
         clearECGToZero();
     }
     
+    // 初始化时应用网格颜色
+    updateEcgGridStyle();
+    
     log(LOG_MODULES.ECG, `ECG 初始化完成，样式: ${currentStyle}`, 'detailed');
 }
 
@@ -206,8 +254,21 @@ export function updateECGCanvas() {
 // ============ 清空ECG数据为直线 ============
 export function clearECGToZero() {
     ecgData.length = 0;
+    ecgBuffer.length = 0;
+    currentScanX = 0;
+    lastScanX = 0;
+    
     for (let i = 0; i < ecgMaxPoints; i++) {
         ecgData.push(0);
+        ecgBuffer.push(0);
+    }
+    
+    if (ecgCtx && ecgCanvas) {
+        const width = ecgCanvas.width / window.devicePixelRatio;
+        const height = ecgCanvas.height / window.devicePixelRatio;
+        const centerY = height / 2;
+        
+        ecgCtx.clearRect(0, 0, width, height);
     }
     
     log(LOG_MODULES.ECG, 'ECG数据清空', 'detailed');
@@ -257,72 +318,133 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     const config = ecgConfig;
     const effect = ecgEffects[config.效果] || ecgEffects['标准'];
     
-    ecgCtx.clearRect(0, 0, width, height);
-    
-    // 网格已通过CSS在.ecg-grid div中实现，不再在canvas上绘制重复网格
-    
-    // 中线
-    ecgCtx.strokeStyle = 'rgba(255, 26, 26, 0.1)';
-    ecgCtx.lineWidth = 1;
-    ecgCtx.beginPath();
-    ecgCtx.moveTo(0, centerY);
-    ecgCtx.lineTo(width, centerY);
-    ecgCtx.stroke();
-    
-    // ECG 曲线
-    const gradient = styleConfig.gradient(ecgCtx, width);
-    
     // 使用配置的线条颜色和宽度
-    const lineColor = config.lineColor || '#ff0033';
+    const lineColor = config.lineColor || '#ff0033'; // 默认红色
     const lineWidth = config.lineWidth || 2;
-    ecgCtx.strokeStyle = isAlarming ? '#ff1a1a' : lineColor;
+    
+    const step = width / ecgMaxPoints;
+    const previousScanX = lastScanX;
+    
+    // 更新扫描位置
+    currentScanX += scanSpeed;
+    if (currentScanX > width) {
+        currentScanX = 0;
+    }
+    
+    // 初始化时清空画布
+    if (ecgData.length === 0) {
+        ecgCtx.clearRect(0, 0, width, height);
+        // 初始化数据缓冲区
+        ecgBuffer.length = 0;
+        for (let i = 0; i < ecgMaxPoints; i++) {
+            ecgBuffer.push(0);
+        }
+    }
+    
+    // 1. 清除旧的红点
+    const clearWidth = 40;
+    let clearStartX = previousScanX - clearWidth / 2;
+    let clearEndX = previousScanX + clearWidth / 2;
+    
+    if (clearEndX > width && clearStartX < 0) {
+        // 边界情况
+        ecgCtx.clearRect(clearStartX, 0, width - clearStartX, height);
+        ecgCtx.clearRect(0, 0, clearEndX, height);
+    } else if (clearEndX > width) {
+        // 跨右边界
+        ecgCtx.clearRect(Math.max(0, clearStartX), 0, width - Math.max(0, clearStartX), height);
+        ecgCtx.clearRect(0, 0, clearEndX - width, height);
+    } else if (clearStartX < 0) {
+        // 跨左边界
+        ecgCtx.clearRect(0, 0, clearEndX, height);
+        ecgCtx.clearRect(width + clearStartX, 0, -clearStartX, height);
+    } else {
+        // 正常情况
+        ecgCtx.clearRect(Math.max(0, clearStartX), 0, Math.min(width, clearEndX) - Math.max(0, clearStartX), height);
+    }
+    
+
+    
+    // 2. 绘制完整波形（从0到扫描点位置）
+    ecgCtx.strokeStyle = isAlarming ? '#ff0000' : lineColor;
     ecgCtx.lineWidth = isAlarming ? styleConfig.alarmingLineWidth : lineWidth;
-    ecgCtx.lineCap = effect.lineStyle === 'sharp' ? 'square' : 'round';
-    ecgCtx.lineJoin = effect.lineStyle === 'sharp' ? 'bevel' : 'round';
+    ecgCtx.lineCap = 'round';
+    ecgCtx.lineJoin = 'round';
     
     // 添加阴影效果
     if (effect.shadow) {
-        ecgCtx.shadowColor = 'rgba(255, 26, 26, 0.5)';
-        ecgCtx.shadowBlur = 10;
+        ecgCtx.shadowColor = isAlarming ? 'rgba(255, 0, 0, 0.5)' : 'rgba(255, 0, 51, 0.5)';
+        ecgCtx.shadowBlur = 8;
         ecgCtx.shadowOffsetX = 0;
         ecgCtx.shadowOffsetY = 0;
     }
     
-    ecgCtx.beginPath();
+    // 绘制从0到扫描点位置的所有波形
+    const drawEndIndex = Math.floor(currentScanX / step);
     
-    const step = width / ecgMaxPoints;
-    for (let i = 0; i < ecgData.length; i++) {
-        const x = i * step;
-        const y = centerY - ecgData[i] * (height * 0.35);
+    if (drawEndIndex > 0) {
+        ecgCtx.beginPath();
+        let started = false;
         
-        if (i === 0) {
-            ecgCtx.moveTo(x, y);
-        } else {
-            ecgCtx.lineTo(x, y);
+        for (let i = 0; i <= drawEndIndex; i++) {
+            const x = i * step;
+            if (x > currentScanX) break; // 只画到扫描点位置
+            
+            const dataIdx = i;
+            if (dataIdx >= 0 && dataIdx < ecgBuffer.length) {
+                const y = centerY - ecgBuffer[dataIdx] * (height * 0.35);
+                if (!started) {
+                    ecgCtx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ecgCtx.lineTo(x, y);
+                }
+            }
         }
+        
+        ecgCtx.stroke();
     }
-    
-    ecgCtx.stroke();
     
     // 重置阴影
     ecgCtx.shadowColor = 'transparent';
     ecgCtx.shadowBlur = 0;
     
-    // 当前点发光
-    const lastX = (ecgData.length - 1) * step;
-    const lastY = centerY - ecgData[ecgData.length - 1] * (height * 0.35);
+    // 3. 绘制新的红点（扫描点）
+    const redDotX = currentScanX;
+    const redDotDataIdx = Math.floor(redDotX / step);
+    let redDotY = centerY;
     
-    if ((effect.glow && pulseIntensity > 0.3) || isAlarming) {
-        const glowRadius = Math.max(1, isAlarming ? 30 : 20);
-        const glowGradient = ecgCtx.createRadialGradient(lastX, lastY, 0, lastX, lastY, glowRadius);
-        glowGradient.addColorStop(0, 'rgba(255, 26, 26, 0.8)');
-        glowGradient.addColorStop(1, 'rgba(255, 26, 26, 0)');
-        
-        ecgCtx.fillStyle = glowGradient;
-        ecgCtx.beginPath();
-        ecgCtx.arc(lastX, lastY, glowRadius, 0, Math.PI * 2);
-        ecgCtx.fill();
+    if (redDotDataIdx >= 0 && redDotDataIdx < ecgBuffer.length) {
+        redDotY = centerY - ecgBuffer[redDotDataIdx] * (height * 0.35);
     }
+    
+    // 绘制红点发光效果（更大更亮）
+    const glowRadius = isAlarming ? 25 : 15;
+    const glowGradient = ecgCtx.createRadialGradient(redDotX, redDotY, 0, redDotX, redDotY, glowRadius);
+    glowGradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
+    glowGradient.addColorStop(0.2, 'rgba(255, 0, 0, 0.8)');
+    glowGradient.addColorStop(0.5, 'rgba(255, 0, 0, 0.4)');
+    glowGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+    
+    ecgCtx.fillStyle = glowGradient;
+    ecgCtx.beginPath();
+    ecgCtx.arc(redDotX, redDotY, glowRadius, 0, Math.PI * 2);
+    ecgCtx.fill();
+    
+    // 绘制红色外圈
+    ecgCtx.fillStyle = '#ff0000';
+    ecgCtx.beginPath();
+    ecgCtx.arc(redDotX, redDotY, isAlarming ? 10 : 6, 0, Math.PI * 2);
+    ecgCtx.fill();
+    
+    // 绘制红点核心（更亮的白色中心）
+    ecgCtx.fillStyle = '#ffffff';
+    ecgCtx.beginPath();
+    ecgCtx.arc(redDotX, redDotY, isAlarming ? 5 : 3, 0, Math.PI * 2);
+    ecgCtx.fill();
+    
+    // 更新上一次的扫描位置
+    lastScanX = currentScanX;
     
     // 只在详细日志级别输出
     log(LOG_MODULES.ECG, `ECG 绘制完成，样式: ${currentStyle}, 警报状态: ${isAlarming}, 脉冲强度: ${pulseIntensity.toFixed(2)}, 效果: ${config.效果}`, 'detailed');
@@ -333,6 +455,17 @@ export function addECGDataPoint(value) {
     ecgData.push(value);
     if (ecgData.length > ecgMaxPoints) {
         ecgData.shift();
+    }
+    
+    // 同时更新数据缓冲区
+    if (!ecgCanvas) return;
+    const width = ecgCanvas.width / window.devicePixelRatio;
+    const step = width / ecgMaxPoints;
+    
+    // 找到当前扫描位置对应的数据索引并更新
+    const scanIndex = Math.floor(currentScanX / step);
+    if (scanIndex >= 0 && scanIndex < ecgBuffer.length) {
+        ecgBuffer[scanIndex] = value;
     }
 }
 

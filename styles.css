@@ -486,106 +486,173 @@ body.light-mode .top-bar {
     color: var(--heart-rate-color);
     position: relative;
     display: inline-block;
-    transition: transform 0.2s ease-out;
+    transition: all 0.3s ease-out;
     text-shadow: none;
+    z-index: 2;
 }
 
 /* 数字显示样式 */
 .heart-rate-display.style-digital #bpm-display {
     font-family: 'JetBrains Mono', monospace;
-    letter-spacing: 8px;
+    letter-spacing: 10px;
     font-weight: 700;
-}
-
-/* 模拟表盘样式 */
-.heart-rate-display.style-analog #bpm-display {
-    font-family: 'Playfair Display', 'Georgia', serif;
-    font-weight: 600;
-    letter-spacing: 2px;
-    font-style: italic;
-}
-
-/* 3D效果样式 */
-.heart-rate-display.style-3d #bpm-display {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    letter-spacing: 8px;
-    transform: perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(50px);
-}
-
-.heart-rate-display.style-3d #bpm-display::before {
-    content: attr(text);
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    right: -5px;
-    bottom: -5px;
-    color: rgba(0,0,0,0.3);
-    z-index: -1;
-    transform: translateZ(-100px);
-}
-
-/* 标准样式 */
-.heart-rate-display.style-pulse #bpm-display {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    letter-spacing: 4px;
-}
-
-/* 电子二极管效果样式 */
-.heart-rate-display.style-diode #bpm-display {
-    font-family: 'Orbitron', 'Courier New', monospace;
-    font-weight: 900;
-    letter-spacing: 12px;
-    padding: 0 10px;
-}
-
-.heart-rate-display.style-diode #bpm-unit {
-    font-family: 'Orbitron', 'Courier New', monospace;
-    color: var(--heart-rate-color) !important;
-    font-size: 24px;
-    letter-spacing: 6px;
-    margin-left: 15px;
-}
-
-/* 霓虹效果样式 */
-.heart-rate-display.style-neon #bpm-display {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    letter-spacing: 12px;
-}
-
-/* 复古风格样式 */
-.heart-rate-display.style-retro #bpm-display {
-    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
-    font-weight: normal;
-    letter-spacing: 6px;
-}
-
-/* 未来科技样式 */
-.heart-rate-display.style-futuristic #bpm-display {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    letter-spacing: 8px;
-    background: linear-gradient(
-        90deg,
-        var(--heart-rate-color) 0%,
-        var(--heart-rate-color) 45%,
-        rgba(255,255,255,1) 50%,
-        var(--heart-rate-color) 55%,
-        var(--heart-rate-color) 100%
-    );
-    background-size: 200% 100%;
+    background: linear-gradient(90deg, var(--heart-rate-color), #ffffff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
+/* 模拟表盘样式 */
+.heart-rate-display.style-analog #bpm-display {
+    font-family: 'Playfair Display', 'Georgia', serif;
+    letter-spacing: 4px;
+    font-style: italic;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* 3D效果样式 */
+.heart-rate-display.style-3d #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 10px;
+    font-weight: 900;
+    transform: perspective(1500px) rotateX(15deg) rotateY(-8deg) translateZ(100px);
+    text-shadow: 
+        0 1px 0 rgba(0,0,0,0.1),
+        0 2px 0 rgba(0,0,0,0.1),
+        0 3px 0 rgba(0,0,0,0.1),
+        0 4px 0 rgba(0,0,0,0.1),
+        0 5px 0 rgba(0,0,0,0.1);
+}
+
+.heart-rate-display.style-3d #bpm-display::before {
+    content: attr(text);
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: -12px;
+    bottom: -12px;
+    color: rgba(0,0,0,0.3);
+    z-index: -1;
+    transform: translateZ(-200px);
+    filter: blur(4px);
+}
+
+.heart-rate-display.style-3d #bpm-display::after {
+    content: attr(text);
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: -6px;
+    bottom: -6px;
+    color: rgba(0,0,0,0.15);
+    z-index: -1;
+    transform: translateZ(-100px);
+    filter: blur(2px);
+}
+
+/* 标准样式 */
+.heart-rate-display.style-pulse #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 6px;
+    font-weight: 900;
+}
+
+/* 电子二极管效果样式 */
+.heart-rate-display.style-diode #bpm-display {
+    font-family: 'VT323', 'Courier New', monospace;
+    letter-spacing: 14px;
+    font-weight: 400;
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+    animation: diodeFlicker 0.5s ease-in-out infinite alternate;
+}
+
+.heart-rate-display.style-diode #bpm-unit {
+    font-family: 'VT323', 'Courier New', monospace;
+    color: #00ff00 !important;
+    font-size: 28px;
+    letter-spacing: 8px;
+    margin-left: 20px;
+    text-shadow: 0 0 10px #00ff00;
+}
+
+/* 霓虹效果样式 */
+.heart-rate-display.style-neon #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 12px;
+    font-weight: 900;
+    color: var(--heart-rate-color);
+    text-shadow: 0 0 2px var(--heart-rate-color);
+    animation: none;
+}
+
+/* 复古风格样式 */
+.heart-rate-display.style-retro #bpm-display {
+    font-family: 'Press Start 2P', 'Courier New', Courier, monospace;
+    letter-spacing: 8px;
+    font-weight: normal;
+    color: #ff6b35;
+    text-shadow: 2px 2px 0 #000000;
+    animation: retroGlitch 0.1s ease-in-out infinite alternate;
+}
+
+/* 未来科技样式 */
+.heart-rate-display.style-futuristic #bpm-display {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 10px;
+    font-weight: 900;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--heart-rate-color) 25%,
+        #ffffff 50%,
+        var(--heart-rate-color) 75%,
+        transparent 100%
+    );
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: futuristicSlide 3s linear infinite;
+}
+
 /* 极简风格样式 */
 .heart-rate-display.style-minimal #bpm-display {
     font-family: 'Helvetica Neue', 'Segoe UI', 'Roboto', sans-serif;
-    font-weight: 200;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
+    font-weight: 300;
+    color: var(--fg);
+    background: none;
+    text-shadow: none;
+}
+
+/* 动画效果 */
+@keyframes diodeFlicker {
+    0% { opacity: 0.8; text-shadow: 0 0 8px #00ff00; }
+    100% { opacity: 1; text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+}
+
+@keyframes neonFlicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow: 0 0 2px var(--heart-rate-color);
+    }
+    20%, 24%, 55% {
+        text-shadow: 0 0 1px var(--heart-rate-color);
+    }
+}
+
+@keyframes retroGlitch {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-1px, 1px); }
+    50% { transform: translate(1px, -1px); }
+    75% { transform: translate(-1px, -1px); }
+    100% { transform: translate(1px, 1px); }
+}
+
+@keyframes futuristicSlide {
+    0% { background-position: -100% 50%; }
+    100% { background-position: 200% 50%; }
 }
 
 
