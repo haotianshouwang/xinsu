@@ -491,11 +491,32 @@
                                 <input type="color" id="ecgGridColor" value="#ffff00" class="color-picker small">
                             </div>
                             <div class="grid-control-item">
-                                <label class="sub-label">网格透明度</label>
-                                <div class="range-control">
-                                    <input type="range" id="ecgGridOpacity" min="0" max="1" value="1" step="0.01" class="range-slider">
-                                    <span id="ecgGridOpacityValue" class="range-value">1</span>
-                                </div>
+                            <label class="sub-label">网格透明度</label>
+                            <div class="range-control">
+                                <input type="range" id="ecgGridOpacity" min="0" max="1" value="1" step="0.01" class="range-slider">
+                                <span id="ecgGridOpacityValue" class="range-value">1</span>
+                            </div>
+                        </div>
+                        <div class="grid-control-item">
+                            <label class="sub-label">网格高度</label>
+                            <div class="range-control">
+                                <input type="range" id="ecgGridHeight" min="100" max="300" value="200" step="10" class="range-slider">
+                                <span id="ecgGridHeightValue" class="range-value">200</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-group">
+                        <label class="settings-label">显示效果</label>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <select id="ecgEffect" class="settings-select">
+                                <option value="标准" selected>标准</option>
+                                <option value="科技感">科技感</option>
+                                <option value="极简">极简</option>
+                                <option value="复古">复古</option>
+                            </select>
+                            <div class="effect-preview" style="width: 300px; height: 120px; border: 1px solid #333; border-radius: 4px; overflow: hidden; background: #000; position: relative;">
+                                <canvas id="ecgEffectPreview" width="300" height="120" style="width: 100%; height: 100%;"></canvas>
+                                <div style="position: absolute; bottom: 2px; left: 2px; font-size: 10px; color: #666;">预览</div>
                             </div>
                         </div>
                     </div>
@@ -508,8 +529,15 @@
                         <div class="wave-control-item">
                             <label class="sub-label">线条宽度</label>
                             <div class="range-control">
-                                <input type="range" id="ecgLineWidth" min="1" max="5" value="2" step="0.5" class="range-slider">
-                                <span id="ecgLineWidthValue" class="range-value">2</span>
+                                <input type="range" id="ecgLineWidth" min="1" max="5" value="1" step="0.5" class="range-slider">
+                                <span id="ecgLineWidthValue" class="range-value">1</span>
+                            </div>
+                        </div>
+                        <div class="wave-control-item">
+                            <label class="sub-label">线条高度</label>
+                            <div class="range-control">
+                                <input type="range" id="ecgLineHeight" min="0.1" max="1" value="0.5" step="0.05" class="range-slider">
+                                <span id="ecgLineHeightValue" class="range-value">0.5</span>
                             </div>
                         </div>
                     </div>
@@ -569,15 +597,7 @@
                             <option value="干扰">干扰信号模拟</option>
                         </select>
                     </div>
-                    <div class="settings-group">
-                        <label class="settings-label">显示效果</label>
-                        <select id="ecgEffect" class="settings-select">
-                            <option value="标准" selected>标准</option>
-                            <option value="科技感">科技感</option>
-                            <option value="极简">极简</option>
-                            <option value="复古">复古</option>
-                        </select>
-                    </div>
+
                     <div class="settings-group">
                         <button class="settings-btn primary" id="ecgRandomBtn">随机生成参数</button>
                     </div>

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
 
 // 导入模块
 import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize, setParticleMultiColors, setEffectHeartRateConfig, setParticlesEnabled } from './modules/three.js';
@@ -565,13 +565,15 @@ function handleToggleStyle() {
 }
 
 // 设置功能
+let settingsPanel, settingsBtn, closeSettingsBtn, logLevelSelect, clearLogBtn;
+
 function setupSettings() {
     // 获取设置相关元素
-    const settingsPanel = document.getElementById('settings-panel');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    const logLevelSelect = document.getElementById('logLevelSelect');
-    const clearLogBtn = document.getElementById('clearLogBtn');
+    settingsPanel = document.getElementById('settings-panel');
+    settingsBtn = document.getElementById('settingsBtn');
+    closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    logLevelSelect = document.getElementById('logLevelSelect');
+    clearLogBtn = document.getElementById('clearLogBtn');
     
     // 模块日志复选框
     const moduleLogCheckboxes = {
@@ -681,8 +683,21 @@ function setupSettings() {
                     const sectionElement = document.getElementById(`${s}-section`);
                     if (sectionElement) {
                         sectionElement.style.display = s === section ? 'block' : 'none';
+                        console.log(`设置部分 ${s}: ${s === section ? '显示' : '隐藏'}`);
+                    } else {
+                        console.log(`设置部分 ${s}: 未找到元素`);
                     }
                 });
+                
+                // 强制重新渲染设置内容
+                const settingsContent = document.querySelector('.settings-content');
+                if (settingsContent) {
+                    settingsContent.style.display = 'none';
+                    setTimeout(() => {
+                        settingsContent.style.display = 'block';
+                    }, 10);
+                    console.log('强制重新渲染设置内容');
+                }
                 
                 // 如果切换到视觉效果部分，重新初始化预览窗口
                 if (section === 'effects') {
@@ -1011,6 +1026,108 @@ function setupSettings() {
         if (valueDisplay && valueDisplay.classList.contains('range-value')) {
             slider.addEventListener('input', (e) => {
                 valueDisplay.textContent = e.target.value;
+            });
+        }
+    });
+    
+    // 为ECG波形参数添加输入框功能
+    const ecgParamRanges = {
+        ecgPWave: 'ecgPWaveValue',
+        ecgQWave: 'ecgQWaveValue',
+        ecgRWave: 'ecgRWaveValue',
+        ecgSWave: 'ecgSWaveValue',
+        ecgTWave: 'ecgTWaveValue',
+        ecgJitter: 'ecgJitterValue',
+        ecgLineHeight: 'ecgLineHeightValue',
+        ecgLineWidth: 'ecgLineWidthValue',
+        ecgGridOpacity: 'ecgGridOpacityValue',
+        ecgGridHeight: 'ecgGridHeightValue'
+    };
+    
+
+    
+
+    
+    Object.entries(ecgParamRanges).forEach(([sliderId, valueId]) => {
+        const slider = document.getElementById(sliderId);
+        const valueDisplay = document.getElementById(valueId);
+        
+        if (slider && valueDisplay) {
+            // 创建输入框
+            const inputBox = document.createElement('input');
+            inputBox.type = 'number';
+            inputBox.min = slider.min;
+            inputBox.max = slider.max;
+            inputBox.step = slider.step;
+            inputBox.value = slider.value;
+            inputBox.style.width = '60px';
+            inputBox.style.marginLeft = '10px';
+            inputBox.style.padding = '2px 5px';
+            inputBox.style.border = '1px solid #333';
+            inputBox.style.borderRadius = '3px';
+            inputBox.style.backgroundColor = '#222';
+            inputBox.style.color = '#fff';
+            inputBox.style.fontSize = '12px';
+            
+            // 添加到DOM
+            valueDisplay.parentNode.insertBefore(inputBox, valueDisplay.nextSibling);
+            
+            // 绑定滑块变化事件
+            slider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                valueDisplay.textContent = value;
+                inputBox.value = value;
+                
+                // 更新ECG配置
+                let paramName;
+                if (sliderId === 'ecgLineHeight') {
+                    paramName = 'lineHeight';
+                } else if (sliderId === 'ecgLineWidth') {
+                    paramName = 'lineWidth';
+                } else if (sliderId === 'ecgGridOpacity') {
+                    paramName = 'gridOpacity';
+                } else if (sliderId === 'ecgGridHeight') {
+                    paramName = 'gridHeight';
+                } else {
+                    paramName = sliderId.replace('ecg', '').toLowerCase();
+                }
+                const config = {};
+                config[paramName] = parseFloat(value);
+                setEcgConfig(config);
+            });
+            
+            // 绑定输入框变化事件
+            inputBox.addEventListener('input', (e) => {
+                let value = parseFloat(e.target.value);
+                
+                // 验证输入值
+                if (isNaN(value)) {
+                    value = parseFloat(slider.min);
+                } else {
+                    value = Math.max(parseFloat(slider.min), Math.min(parseFloat(slider.max), value));
+                }
+                
+                // 更新显示和滑块
+                e.target.value = value;
+                valueDisplay.textContent = value;
+                slider.value = value;
+                
+                // 更新ECG配置
+                let paramName;
+                if (sliderId === 'ecgLineHeight') {
+                    paramName = 'lineHeight';
+                } else if (sliderId === 'ecgLineWidth') {
+                    paramName = 'lineWidth';
+                } else if (sliderId === 'ecgGridOpacity') {
+                    paramName = 'gridOpacity';
+                } else if (sliderId === 'ecgGridHeight') {
+                    paramName = 'gridHeight';
+                } else {
+                    paramName = sliderId.replace('ecg', '').toLowerCase();
+                }
+                const config = {};
+                config[paramName] = value;
+                setEcgConfig(config);
             });
         }
     });
@@ -1846,6 +1963,17 @@ function updateParticleEffectWithMultiColors(effectType) {
         });
     }
     
+    const ecgGridHeight = document.getElementById('ecgGridHeight');
+    const ecgGridHeightValue = document.getElementById('ecgGridHeightValue');
+    if (ecgGridHeight && ecgGridHeightValue) {
+        ecgGridHeight.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            ecgGridHeightValue.textContent = value;
+            setEcgConfig({ gridHeight: value });
+            console.log('ECG表格高度:', value);
+        });
+    }
+    
     if (ecgLineColor) {
         ecgLineColor.addEventListener('change', (e) => {
             console.log('ECG线条颜色:', e.target.value);
@@ -1936,6 +2064,114 @@ function updateParticleEffectWithMultiColors(effectType) {
             if (ecgJitter) ecgJitter.value = config.抖动 || 0.05;
             if (ecgJitterValue) ecgJitterValue.textContent = (config.抖动 || 0.05).toFixed(2);
         });
+    }
+    
+    // 心电图效果预览
+    let ecgEffectPreviewCanvas = document.getElementById('ecgEffectPreview');
+    let ecgEffectPreviewCtx = ecgEffectPreviewCanvas ? ecgEffectPreviewCanvas.getContext('2d') : null;
+    let ecgEffectPreviewPhase = 0;
+    
+    // 绘制心电图效果预览
+    function drawECGEffectPreview() {
+        if (!ecgEffectPreviewCtx) return;
+        
+        const canvas = ecgEffectPreviewCanvas;
+        const ctx = ecgEffectPreviewCtx;
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // 清空画布
+        ctx.clearRect(0, 0, width, height);
+        
+        // 获取当前ECG配置
+        const config = getEcgConfig();
+        const lineColor = config.lineColor || '#ff0033';
+        const lineWidth = config.lineWidth || 2;
+        const effectName = config.效果 || '标准';
+        const pWave = config.pWave || 0.15;
+        const qWave = config.qWave || -0.1;
+        const rWave = config.rWave || 0.8;
+        const sWave = config.sWave || -0.2;
+        const tWave = config.tWave || 0.25;
+        const 抖动 = config.抖动 || 0.05;
+        
+        // 绘制波形
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // 根据效果名称应用对应的效果，与实际ECG完全同步
+        if (effectName === '科技感') {
+            // 科技感效果使用与实际ECG相同的阴影设置
+            ctx.shadowColor = `rgba(${parseInt(lineColor.slice(1, 3), 16)}, ${parseInt(lineColor.slice(3, 5), 16)}, ${parseInt(lineColor.slice(5, 7), 16)}, 0.2)`;
+            ctx.shadowBlur = 2;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+        } else if (effectName === '复古') {
+            // 复古效果使用与实际ECG相同的阴影设置
+            ctx.shadowColor = `rgba(${parseInt(lineColor.slice(1, 3), 16)}, ${parseInt(lineColor.slice(3, 5), 16)}, ${parseInt(lineColor.slice(5, 7), 16)}, 0.5)`;
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+        } else if (effectName === '极简') {
+            // 极简效果：无阴影，细线条
+            ctx.lineWidth = Math.max(1, lineWidth * 0.8);
+        }
+        
+        // 生成预览波形，使用与实际ECG相同的逻辑
+        ctx.beginPath();
+        let started = false;
+        const ecgMaxPoints = 200; // 预览中使用的点数
+        const lineHeight = config.lineHeight || 0.5;
+        const previewCenterY = height * lineHeight;
+        
+        for (let i = 0; i < width; i++) {
+            const x = i;
+            const t = (i / width) * Math.PI * 2 + ecgEffectPreviewPhase;
+            
+            // 生成模拟ECG波形，使用配置的参数
+            const pWaveValue = t < Math.PI * 0.3 ? Math.sin(t * 3) * pWave * 2 : 0;
+            const qWaveValue = (t >= Math.PI * 0.3 && t < Math.PI * 0.4) ? Math.sin((t - Math.PI * 0.3) * 10) * qWave * 2 : 0;
+            const rWaveValue = (t >= Math.PI * 0.4 && t < Math.PI * 0.5) ? Math.sin((t - Math.PI * 0.4) * 10) * rWave * 2 : 0;
+            const sWaveValue = (t >= Math.PI * 0.5 && t < Math.PI * 0.6) ? Math.sin((t - Math.PI * 0.5) * 10) * sWave * 2 : 0;
+            const tWaveValue = (t >= Math.PI * 0.6 && t < Math.PI * 1.2) ? Math.sin((t - Math.PI * 0.6) * 2) * tWave * 2 : 0;
+            
+            // 添加抖动
+            const jitter = (Math.random() - 0.5) * 抖动;
+            const value = pWaveValue + qWaveValue + rWaveValue + sWaveValue + tWaveValue + jitter;
+            const y = previewCenterY - value * (height * 0.4); // 调整振幅以适应预览窗口
+            
+            if (!started) {
+                ctx.moveTo(x, y);
+                started = true;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        
+        ctx.stroke();
+        
+        // 重置阴影和线条宽度
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.lineWidth = lineWidth;
+        
+        // 更新相位以产生动画效果
+        ecgEffectPreviewPhase += 0.02;
+        if (ecgEffectPreviewPhase > Math.PI * 2) {
+            ecgEffectPreviewPhase = 0;
+        }
+        
+        // 递归调用以产生动画
+        requestAnimationFrame(drawECGEffectPreview);
+    }
+    
+    // 启动心电图效果预览动画
+    if (ecgEffectPreviewCtx) {
+        drawECGEffectPreview();
     }
     
     if (ecgEffect) {

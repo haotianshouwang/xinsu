@@ -899,6 +899,7 @@ body.dark-mode .settings-nav {
     padding: 24px;
     overflow-y: auto;
     max-height: calc(80vh - 60px);
+    min-height: 400px;
     cursor: default;
 }
 
@@ -914,6 +915,7 @@ body.dark-mode .settings-content {
 
 .settings-section {
     margin-bottom: 32px;
+    min-height: 200px;
 }
 
 .settings-section h4 {
@@ -1465,6 +1467,7 @@ body.dark-mode .settings-panel {
 
 .settings-section {
     margin-bottom: 32px;
+    min-height: 200px;
 }
 
 .settings-section h4 {
