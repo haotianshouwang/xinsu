@@ -5,6 +5,7 @@ let alarmOscillator = null;
 let alarmInterval = null;
 let isAlarming = false;
 let audioEnabled = false;
+let currentAudioType = 'standard'; // 默认音效类型
 
 // 导入日志管理模块
 import { log, LOG_MODULES } from './logger.js';
@@ -20,9 +21,9 @@ function initAudio() {
     }
 }
 
-// 心跳音 (667Hz包络)
+// 心跳音 (根据音效类型)
 function playHeartbeat() {
-    if (!audioEnabled) return;
+    if (!audioEnabled || currentAudioType === 'none') return;
     
     initAudio();
     
@@ -34,17 +35,58 @@ function playHeartbeat() {
     const osc = audioContext.createOscillator();
     const oscGain = audioContext.createGain();
     
-    // 设置为667Hz QRS同步脉冲
-    osc.type = 'sine';
-    osc.frequency.value = 667;
-    
-    // 包络参数
     const now = audioContext.currentTime;
-    const attackTime = 0.01;
-    const sustainTime = 0.1;
-    const releaseTime = 0.05;
-    const maxGain = 0.5;
+    let attackTime, sustainTime, releaseTime, maxGain;
     
+    // 根据音效类型设置不同参数
+    switch (currentAudioType) {
+        case 'standard':
+            // 标准心跳声 (667Hz包络)
+            osc.type = 'sine';
+            osc.frequency.value = 667;
+            attackTime = 0.01;
+            sustainTime = 0.1;
+            releaseTime = 0.05;
+            maxGain = 0.5;
+            break;
+        case 'digital':
+            // 数字音效 (方波，更高频率)
+            osc.type = 'square';
+            osc.frequency.value = 800;
+            attackTime = 0.005;
+            sustainTime = 0.08;
+            releaseTime = 0.03;
+            maxGain = 0.4;
+            break;
+        case 'ambient':
+            // 环境音效 (正弦波，更低频率，更柔和)
+            osc.type = 'sine';
+            osc.frequency.value = 440;
+            attackTime = 0.05;
+            sustainTime = 0.15;
+            releaseTime = 0.1;
+            maxGain = 0.3;
+            break;
+        case 'lowfreq':
+            // 低频音效 (正弦波，低频，模拟心脏跳动)
+            osc.type = 'sine';
+            osc.frequency.value = 100;
+            attackTime = 0.02;
+            sustainTime = 0.12;
+            releaseTime = 0.08;
+            maxGain = 0.6;
+            break;
+        default:
+            // 默认使用标准音效
+            osc.type = 'sine';
+            osc.frequency.value = 667;
+            attackTime = 0.01;
+            sustainTime = 0.1;
+            releaseTime = 0.05;
+            maxGain = 0.5;
+    }
+    
+    // 包络设置
     oscGain.gain.setValueAtTime(0, now);
     oscGain.gain.linearRampToValueAtTime(maxGain, now + attackTime);
     oscGain.gain.setValueAtTime(maxGain, now + attackTime + sustainTime);
@@ -56,7 +98,7 @@ function playHeartbeat() {
     osc.start(now);
     osc.stop(now + attackTime + sustainTime + releaseTime + 0.01);
     
-    log(LOG_MODULES.AUDIO, '心跳音播放', 'detailed');
+    log(LOG_MODULES.AUDIO, `心跳音播放 (${currentAudioType})`, 'detailed');
 }
 
 // 警报音 (667Hz包络，每500ms重复)
@@ -232,6 +274,35 @@ function getIsAlarming() {
     return isAlarming;
 }
 
+// 设置音量（0-100）
+function setVolume(volume) {
+    // 将0-100的范围转换为0-1
+    const normalizedVolume = Math.max(0, Math.min(1, volume / 100));
+    if (gainNode) {
+        gainNode.gain.value = normalizedVolume;
+        log(LOG_MODULES.AUDIO, `音量设置为 ${volume}% (${normalizedVolume})`, 'basic');
+    }
+}
+
+// 获取当前音量
+function getVolume() {
+    if (gainNode) {
+        return Math.round(gainNode.gain.value * 100);
+    }
+    return 100; // 默认返回100%
+}
+
+// 设置音效类型
+function setAudioType(type) {
+    currentAudioType = type;
+    log(LOG_MODULES.AUDIO, `音效类型设置为 ${type}`, 'basic');
+}
+
+// 获取当前音效类型
+function getAudioType() {
+    return currentAudioType;
+}
+
 export {
     initAudio,
     playHeartbeat,
@@ -239,5 +310,9 @@ export {
     stopAlarm,
     setAudioEnabled,
     getAudioEnabled,
-    getIsAlarming
+    getIsAlarming,
+    setVolume,
+    getVolume,
+    setAudioType,
+    getAudioType
 };

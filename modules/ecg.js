@@ -70,22 +70,41 @@ const ecgEffects = {
     '标准': {
         lineStyle: 'smooth',
         glow: true,
-        shadow: false
+        shadow: false,
+        gradient: true
     },
     '科技感': {
         lineStyle: 'sharp',
         glow: true,
-        shadow: true
+        shadow: true,
+        gradient: true,
+        pulseEffect: true
     },
     '极简': {
         lineStyle: 'smooth',
         glow: false,
-        shadow: false
+        shadow: false,
+        gradient: false
     },
     '复古': {
         lineStyle: 'sharp',
         glow: false,
-        shadow: true
+        shadow: true,
+        gradient: false
+    },
+    '霓虹': {
+        lineStyle: 'smooth',
+        glow: true,
+        shadow: true,
+        gradient: true,
+        neonEffect: true
+    },
+    '未来': {
+        lineStyle: 'sharp',
+        glow: true,
+        shadow: false,
+        gradient: true,
+        pulseEffect: true
     }
 };
 
@@ -288,11 +307,8 @@ export function clearECGToZero() {
     }
     
     if (ecgCtx && ecgCanvas) {
-        const width = ecgCanvas.width / window.devicePixelRatio;
-        const height = ecgCanvas.height / window.devicePixelRatio;
-        const centerY = height / 2;
-        
-        ecgCtx.clearRect(0, 0, width, height);
+        // 清除整块画布（物理像素），保证与绘制坐标系一致
+        ecgCtx.clearRect(0, 0, ecgCanvas.width, ecgCanvas.height);
     }
     
     log(LOG_MODULES.ECG, 'ECG数据清空', 'detailed');
@@ -333,8 +349,13 @@ export function generateECGValue(phase, bpm) {
 export function drawECG(currentStyle, isAlarming, pulseIntensity) {
     if (!ecgCtx || !ecgCanvas) return;
     
-    const width = ecgCanvas.width / window.devicePixelRatio;
-    const height = ecgCanvas.height / window.devicePixelRatio;
+    const dpr = window.devicePixelRatio || 1;
+    const width = ecgCanvas.width / dpr;
+    const height = ecgCanvas.height / dpr;
+    
+    // 使用逻辑坐标绘制，缩放以填满高分辨率 canvas，保证波形居中
+    ecgCtx.save();
+    ecgCtx.scale(dpr, dpr);
     
     // 获取当前样式配置和效果配置
     const styleConfig = ecgStyles[currentStyle] || ecgStyles.style1;
@@ -410,36 +431,97 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
         ecgCtx.clearRect(Math.max(0, clearStartX), 0, Math.min(width, clearEndX) - Math.max(0, clearStartX), height);
     }
     
-
-    
     // 2. 绘制完整波形（从0到扫描点位置）
-    ecgCtx.strokeStyle = isAlarming ? '#ff0000' : lineColor;
-    ecgCtx.lineWidth = isAlarming ? styleConfig.alarmingLineWidth : lineWidth;
-    ecgCtx.lineCap = 'round';
-    ecgCtx.lineJoin = 'round';
-    
-    // 添加阴影效果
-    if (effect.shadow) {
-        // 根据效果类型调整阴影强度
-        let shadowOpacity = 0.5;
-        let shadowBlur = 8;
-        
-        if (config.效果 === '科技感') {
-            // 科技感效果进一步降低阴影强度，避免线条模糊
-            shadowOpacity = 0.2;
-            shadowBlur = 2;
-        }
-        
-        ecgCtx.shadowColor = isAlarming ? `rgba(255, 0, 0, ${shadowOpacity})` : `rgba(${parseInt(lineColor.slice(1, 3), 16)}, ${parseInt(lineColor.slice(3, 5), 16)}, ${parseInt(lineColor.slice(5, 7), 16)}, ${shadowOpacity})`;
-        ecgCtx.shadowBlur = shadowBlur;
-        ecgCtx.shadowOffsetX = 0;
-        ecgCtx.shadowOffsetY = 0;
-    }
-    
-    // 绘制从0到扫描点位置的所有波形
     const drawEndIndex = Math.floor(currentScanX / step);
     
     if (drawEndIndex > 0) {
+        // 绘制渐变效果
+        if (effect.gradient) {
+            const gradient = ecgCtx.createLinearGradient(0, 0, width, 0);
+            const r = parseInt(lineColor.slice(1, 3), 16);
+            const g = parseInt(lineColor.slice(3, 5), 16);
+            const b = parseInt(lineColor.slice(5, 7), 16);
+            
+            gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.3)`);
+            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 1)`);
+            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.3)`);
+            
+            ecgCtx.strokeStyle = gradient;
+        } else {
+            ecgCtx.strokeStyle = isAlarming ? '#ff0000' : lineColor;
+        }
+        
+        // 设置线条宽度
+        let currentLineWidth = isAlarming ? styleConfig.alarmingLineWidth : lineWidth;
+        
+        // 脉冲效果
+        if (effect.pulseEffect && pulseIntensity > 0) {
+            currentLineWidth *= (1 + pulseIntensity * 0.5);
+        }
+        
+        ecgCtx.lineWidth = currentLineWidth;
+        
+        // 设置线条样式
+        if (effect.lineStyle === 'sharp') {
+            ecgCtx.lineCap = 'square';
+            ecgCtx.lineJoin = 'bevel';
+        } else {
+            ecgCtx.lineCap = 'round';
+            ecgCtx.lineJoin = 'round';
+        }
+        
+        // 添加阴影效果
+        if (effect.shadow) {
+            // 根据效果类型调整阴影强度
+            let shadowOpacity = 0.5;
+            let shadowBlur = 8;
+            
+            if (config.效果 === '科技感') {
+                shadowOpacity = 0.2;
+                shadowBlur = 2;
+            } else if (config.效果 === '霓虹') {
+                shadowOpacity = 0.8;
+                shadowBlur = 12;
+            }
+            
+            ecgCtx.shadowColor = isAlarming ? `rgba(255, 0, 0, ${shadowOpacity})` : `rgba(${parseInt(lineColor.slice(1, 3), 16)}, ${parseInt(lineColor.slice(3, 5), 16)}, ${parseInt(lineColor.slice(5, 7), 16)}, ${shadowOpacity})`;
+            ecgCtx.shadowBlur = shadowBlur;
+            ecgCtx.shadowOffsetX = 0;
+            ecgCtx.shadowOffsetY = 0;
+        }
+        
+        // 霓虹效果
+        if (effect.neonEffect) {
+            // 先绘制一个更粗的发光轮廓
+            ecgCtx.save();
+            ecgCtx.strokeStyle = isAlarming ? '#ff0000' : lineColor;
+            ecgCtx.lineWidth = currentLineWidth * 3;
+            ecgCtx.globalAlpha = 0.3;
+            
+            ecgCtx.beginPath();
+            let started = false;
+            
+            for (let i = 0; i <= drawEndIndex; i++) {
+                const x = i * step;
+                if (x > currentScanX) break; // 只画到扫描点位置
+                
+                const dataIdx = i;
+                if (dataIdx >= 0 && dataIdx < ecgBuffer.length) {
+                    const y = centerY - ecgBuffer[dataIdx] * (height * 0.35);
+                    if (!started) {
+                        ecgCtx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ecgCtx.lineTo(x, y);
+                    }
+                }
+            }
+            
+            ecgCtx.stroke();
+            ecgCtx.restore();
+        }
+        
+        // 绘制主线条
         ecgCtx.beginPath();
         let started = false;
         
@@ -460,11 +542,11 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
         }
         
         ecgCtx.stroke();
+        
+        // 重置阴影
+        ecgCtx.shadowColor = 'transparent';
+        ecgCtx.shadowBlur = 0;
     }
-    
-    // 重置阴影
-    ecgCtx.shadowColor = 'transparent';
-    ecgCtx.shadowBlur = 0;
     
     // 3. 绘制新的红点（扫描点）- 极简效果除外
     if (config.效果 !== '极简') {
@@ -477,16 +559,18 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
         }
         
         // 绘制红点发光效果（更大更亮），使用线条颜色
-        const glowRadius = isAlarming ? 25 : 15;
+        const glowRadius = isAlarming ? 25 : effect.neonEffect ? 30 : 15;
         const glowGradient = ecgCtx.createRadialGradient(redDotX, redDotY, 0, redDotX, redDotY, glowRadius);
         const dotColor = isAlarming ? '#ff0000' : lineColor;
         const r = parseInt(dotColor.slice(1, 3), 16);
         const g = parseInt(dotColor.slice(3, 5), 16);
         const b = parseInt(dotColor.slice(5, 7), 16);
         
+        // 增强发光效果
         glowGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
-        glowGradient.addColorStop(0.2, `rgba(${r}, ${g}, ${b}, 0.8)`);
-        glowGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.4)`);
+        glowGradient.addColorStop(0.1, `rgba(${r}, ${g}, ${b}, 0.9)`);
+        glowGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.6)`);
+        glowGradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.3)`);
         glowGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
         
         ecgCtx.fillStyle = glowGradient;
@@ -495,20 +579,38 @@ export function drawECG(currentStyle, isAlarming, pulseIntensity) {
         ecgCtx.fill();
         
         // 绘制外圈，使用线条颜色
+        const outerRadius = isAlarming ? 10 : effect.neonEffect ? 12 : 6;
         ecgCtx.fillStyle = dotColor;
         ecgCtx.beginPath();
-        ecgCtx.arc(redDotX, redDotY, isAlarming ? 10 : 6, 0, Math.PI * 2);
+        ecgCtx.arc(redDotX, redDotY, outerRadius, 0, Math.PI * 2);
         ecgCtx.fill();
         
         // 绘制红点核心（更亮的白色中心）
+        const innerRadius = isAlarming ? 5 : effect.neonEffect ? 6 : 3;
         ecgCtx.fillStyle = '#ffffff';
         ecgCtx.beginPath();
-        ecgCtx.arc(redDotX, redDotY, isAlarming ? 5 : 3, 0, Math.PI * 2);
+        ecgCtx.arc(redDotX, redDotY, innerRadius, 0, Math.PI * 2);
         ecgCtx.fill();
+        
+        // 脉冲效果
+        if (effect.pulseEffect && pulseIntensity > 0) {
+            // 绘制一个脉动的外圈
+            ecgCtx.fillStyle = glowGradient;
+            ecgCtx.globalAlpha = pulseIntensity * 0.5;
+            ecgCtx.beginPath();
+            ecgCtx.arc(redDotX, redDotY, glowRadius * (1 + pulseIntensity), 0, Math.PI * 2);
+            ecgCtx.fill();
+            ecgCtx.globalAlpha = 1;
+        }
     }
     
     // 更新上一次的扫描位置
     lastScanX = currentScanX;
+    
+    ecgCtx.restore();
+    
+    // 绘制预览框
+    updateECGPreview();
     
     // 只在详细日志级别输出
     log(LOG_MODULES.ECG, `ECG 绘制完成，样式: ${currentStyle}, 警报状态: ${isAlarming}, 脉冲强度: ${pulseIntensity.toFixed(2)}, 效果: ${config.效果}`, 'detailed');
@@ -533,16 +635,31 @@ export function addECGDataPoint(value) {
     }
 }
 
-// 获取当前ECG数据
+// 获取 ECG 数据
 export function getECGData() {
-    return ecgData;
+    return [...ecgData];
 }
 
-// 设置ECG数据（用于测试或特殊情况）
+// 设置 ECG 数据
 export function setECGData(data) {
-    ecgData.length = 0;
-    ecgData.push(...data);
-    if (ecgData.length > ecgMaxPoints) {
-        ecgData.splice(0, ecgData.length - ecgMaxPoints);
-    }
+    ecgData = [...data];
+}
+
+// 更新 ECG 预览框
+export function updateECGPreview() {
+    const previewCanvas = document.getElementById('ecgEffectPreview');
+    if (!previewCanvas || !ecgCanvas) return;
+    
+    const previewCtx = previewCanvas.getContext('2d');
+    if (!previewCtx) return;
+    
+    // 清除预览画布
+    previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    
+    // 将主画布内容缩小绘制到预览画布
+    previewCtx.drawImage(
+        ecgCanvas,
+        0, 0, ecgCanvas.width, ecgCanvas.height,
+        0, 0, previewCanvas.width, previewCanvas.height
+    );
 }

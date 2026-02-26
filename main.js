@@ -1,8 +1,8 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import * as THREE from 'three';
+import * as THREE from 'three';
 
 // 导入模块
 import { initThree, updateThree, renderThree, resetParticles, updateBackgroundColor, onWindowResize, setParticleEffect, setParticleColor, setParticleCount, setParticleSize, setParticleMultiColors, setEffectHeartRateConfig, setParticlesEnabled } from './modules/three.js';
-import { initAudio, playHeartbeat, startAlarm, stopAlarm, setAudioEnabled, getAudioEnabled, getIsAlarming } from './modules/audio.js';
+import { initAudio, playHeartbeat, startAlarm, stopAlarm, setAudioEnabled, getAudioEnabled, getIsAlarming, setVolume, getVolume, setAudioType, getAudioType } from './modules/audio.js';
 import { setupConnectButtons, updateStatus as updateBluetoothStatus, updateConnectButtons as updateBluetoothButtons, updateHeartRateDisplay as updateBluetoothHeartRate, handleHeartRate as handleBluetoothHeartRate, onDisconnected as onBluetoothDisconnected, disconnect as disconnectBluetooth, getConnected } from './modules/bluetooth.js';
 import { registerHeartRateCallback, registerConnectionStatusCallback, getCurrentBPM, getLastDataTime, getPulseIntensity, setPulseIntensity, getLastBeatTime, setLastBeatTime } from './modules/heart-rate-manager.js';
 import { initLogger, setLogLevel, setModuleLog, clearLogs, LOG_MODULES, LOG_LEVELS } from './modules/logger.js';
@@ -13,15 +13,15 @@ import { initStyle, toggleStyle, getCurrentStyle, getBackgroundColor } from './m
 // 全局变量
 let animationId = null;
 let currentStyle = 'style1';
-let currentMode = 'light'; // 默认为白天模式
+let currentMode = 'dark'; // 默认为深色模式
 let ecgPhase = 0;
-let currentBgType = 'image'; // 默认为图片背景
+let currentBgType = 'color'; // 默认为纯色背景
 let currentBgColor = '#000000'; // 默认为黑色背景
 let currentBgImage = 'images/bg1.jpg'; // 默认为第一张背景图片
-let originalBgType = 'image'; // 存储原始背景类型
+let originalBgType = 'color'; // 存储原始背景类型
 let originalBgImage = 'images/bg1.jpg'; // 存储原始背景图片
 let originalBgColor = '#000000'; // 存储原始背景颜色
-let isNightModeBackground = false; // 标记是否为黑夜模式背景
+let isNightModeBackground = true; // 标记是否为黑夜模式背景
 let currentMultiColors = {}; // 当前多颜色效果的颜色值
 // 心跳联动效果配置
 let heartbeatEffectConfig = {
@@ -279,6 +279,123 @@ function updateHeartRateBeatEffect(intensity) {
     }
 }
 
+// 检测浏览器蓝牙功能
+async function checkBluetoothSupport() {
+    const resultElement = document.getElementById('bluetoothCheckResult');
+    
+    try {
+        if (!navigator.bluetooth) {
+            throw new Error('noFind');
+        }
+        
+        await navigator.bluetooth.getAvailability();
+        return { supported: true, available: true };
+    } catch (error) {
+        if (error.message === 'noFind') {
+            return { supported: false, available: false, error: 'noFind' };
+        }
+        return { supported: true, available: false, error: error.message };
+    }
+}
+
+// 更新蓝牙检测结果UI
+function updateBluetoothCheckResult(result) {
+    const resultElement = document.getElementById('bluetoothCheckResult');
+    
+    let html = '';
+    
+    if (result.supported && result.available) {
+        html = `
+            <div class="check-status success">
+                <p>✓ 检测到蓝牙设备</p>
+                <div class="bluetooth-info">
+                    <h4>💡 提示</h4>
+                    <p>您可以去右上角设置中更换网格颜色、背景设置等个性化配置。</p>
+                </div>
+            </div>
+        `;
+    } else if (!result.supported) {
+        html = `
+            <div class="check-status error">
+                <p>✗ 当前浏览器不支持蓝牙功能</p>
+                <div class="bluetooth-info">
+                    <h4>📋 解决方法</h4>
+                    <ul>
+                        <li>请使用最新版的 <strong>Edge</strong> 或 <strong>Chrome</strong> 浏览器（包括电脑和手机版）</li>
+                        <li>确保您的设备配备了硬件蓝牙模块</li>
+                        <li>检查浏览器是否已授予蓝牙权限</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    } else {
+        html = `
+            <div class="check-status warning">
+                <p>⚠ 未找到蓝牙设备</p>
+                <div class="bluetooth-info">
+                    <h4>📋 可能的原因</h4>
+                    <ul>
+                        <li>蓝牙功能未开启</li>
+                        <li>浏览器未授予蓝牙权限</li>
+                        <li>设备蓝牙模块未正常工作</li>
+                    </ul>
+                    <h4>💡 解决方法</h4>
+                    <ul>
+                        <li>请确保设备蓝牙已开启</li>
+                        <li>在浏览器设置中允许使用蓝牙</li>
+                        <li>尝试重启蓝牙或刷新页面</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+    
+    resultElement.innerHTML = html;
+}
+
+// 检查是否是首次访问
+function isFirstVisit() {
+    const visited = localStorage.getItem('xinsu_visited');
+    return !visited;
+}
+
+// 标记为已访问
+function markAsVisited() {
+    localStorage.setItem('xinsu_visited', 'true');
+}
+
+// 显示首次访问提示弹窗
+async function showFirstVisitModal() {
+    const modal = document.getElementById('firstVisitModal');
+    if (!modal) return;
+    
+    modal.classList.add('show');
+    
+    // 开始检测蓝牙
+    const result = await checkBluetoothSupport();
+    updateBluetoothCheckResult(result);
+    
+    // 标记为已访问
+    markAsVisited();
+}
+
+// 隐藏首次访问提示弹窗
+function hideFirstVisitModal() {
+    const modal = document.getElementById('firstVisitModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+// 初始化首次访问提示
+function initFirstVisitCheck() {
+    if (isFirstVisit()) {
+        setTimeout(() => {
+            showFirstVisitModal();
+        }, 1000);
+    }
+}
+
 // 初始化函数
 function init() {
     // 获取DOM元素
@@ -368,8 +485,11 @@ function init() {
         }
     });
     
-    // 设置默认背景图片
-    if (currentBgType === 'image' && currentBgImage) {
+    // 设置默认背景
+    if (currentBgType === 'color') {
+        document.body.style.background = currentBgColor;
+        updateBackgroundColor(currentBgColor);
+    } else if (currentBgType === 'image' && currentBgImage) {
         document.body.style.background = `url('${currentBgImage}') center/cover no-repeat`;
     }
     
@@ -403,21 +523,18 @@ function animate(time) {
         addECGDataPoint(0);
     }
     
-    // 心跳检测：只在有数据且不在报警状态时播放心跳声
-    if (hasData && !getIsAlarming() && ecgValue > 0.6 && t - getLastBeatTime() > 0.5) {
+    // 心跳音与脉冲：按“时间间隔”驱动，避免因 ECG 模拟或蓝牙包不稳定导致声音断断续续（参考时间驱动方案）
+    const bpm = getCurrentBPM();
+    const beatIntervalSec = bpm > 0 ? 60 / Math.max(30, Math.min(240, bpm)) : 0;
+    const timeSinceLastBeat = t - getLastBeatTime();
+    if (hasData && bpm > 0 && !getIsAlarming() && beatIntervalSec > 0 && timeSinceLastBeat >= beatIntervalSec) {
         let pulseIntensity = 1;
-        
-        // 根据效果与心率绑定配置调整脉冲强度
         if (effectHeartRateConfig.enabled) {
             pulseIntensity *= effectHeartRateConfig.intensity;
         }
-        
-        // 无论心率绑定是否启用，都播放心跳音效和更新状态
         setLastBeatTime(t);
         setPulseIntensity(pulseIntensity);
-        
         playHeartbeat();
-        
         if (elements.heartRateEl) {
             elements.heartRateEl.classList.remove('alarm');
             elements.heartRateEl.classList.add('pulse');
@@ -483,17 +600,29 @@ function animate(time) {
         });
     }
     
-    // 警报检测：只有设备连接但长时间无数据时才报警
+    // 警报检测：只有设备连接但长时间无数据时才报警，或者心率超出阈值范围时报警
     const hasRecentData = t - getLastDataTime() <= 10; // 延长警报触发时间至10秒
     const isConnected = getConnected();
     
-    // 只有当设备连接但确实没有数据或数据长时间过时才报警
+    // 读取心率报警阈值
+    const alarmMinBpm = parseInt(document.getElementById('alarmMinBpm')?.value || 50);
+    const alarmMaxBpm = parseInt(document.getElementById('alarmMaxBpm')?.value || 180);
+    const alarmEnabled = document.getElementById('alarmToggle')?.checked || false;
+    
+    // 检查心率是否超出阈值范围
+    let isHeartRateOutOfRange = false;
+    if (hasData && alarmEnabled) {
+        const bpm = getCurrentBPM();
+        isHeartRateOutOfRange = bpm < alarmMinBpm || bpm > alarmMaxBpm;
+    }
+    
+    // 只有当设备连接但确实没有数据或数据长时间过时，或者心率超出阈值范围时才报警
     // 即使心率值相同，只要设备仍在发送数据，就不应该触发警报
-    if (isConnected && (!hasData && !hasRecentData)) {
+    if (isConnected && ((!hasData && !hasRecentData) || isHeartRateOutOfRange)) {
         startAlarm(elements.alarmOverlay, elements.statusDot, elements.heartRateEl, (type, data, highlight) => logDebug(elements.debugContent, elements.debugCount, type, data, highlight));
         
         // 当没有数据且数据过时，更新心率显示为"--"
-        if (elements.bpmDisplay && (elements.bpmDisplay.textContent !== '--' && elements.bpmDisplay.textContent !== '0')) {
+        if (elements.bpmDisplay && (elements.bpmDisplay.textContent !== '--' && elements.bpmDisplay.textContent !== '0') && (!hasData && !hasRecentData)) {
             updateBluetoothHeartRate(elements.bpmDisplay, elements.heartRateEl, '--');
         }
     } else {
@@ -568,6 +697,8 @@ function handleToggleStyle() {
 let settingsPanel, settingsBtn, closeSettingsBtn, logLevelSelect, clearLogBtn;
 
 function setupSettings() {
+    // 心电图设置预览：仅在该分页可见时运行循环，保证实时更新
+    let ecgPreviewSectionVisible = false;
     // 获取设置相关元素
     settingsPanel = document.getElementById('settings-panel');
     settingsBtn = document.getElementById('settingsBtn');
@@ -669,42 +800,40 @@ function setupSettings() {
     
     // 绑定设置导航切换事件
     const settingsNavItems = document.querySelectorAll('.settings-nav-item');
+    const sectionIds = ['appearance', 'display', 'effects', 'heart-rate', 'ecg', 'audio-system', 'about'];
     settingsNavItems.forEach(item => {
         item.addEventListener('click', () => {
-            const section = item.dataset.section;
-            if (section) {
-                // 更新导航项状态
-                settingsNavItems.forEach(navItem => navItem.classList.remove('active'));
-                item.classList.add('active');
-                
-                // 显示对应的设置部分
-                const sections = ['appearance', 'display', 'effects', 'heart-rate', 'ecg', 'audio', 'system'];
-                sections.forEach(s => {
-                    const sectionElement = document.getElementById(`${s}-section`);
-                    if (sectionElement) {
-                        sectionElement.style.display = s === section ? 'block' : 'none';
-                        console.log(`设置部分 ${s}: ${s === section ? '显示' : '隐藏'}`);
-                    } else {
-                        console.log(`设置部分 ${s}: 未找到元素`);
-                    }
-                });
-                
-                // 强制重新渲染设置内容
-                const settingsContent = document.querySelector('.settings-content');
-                if (settingsContent) {
-                    settingsContent.style.display = 'none';
-                    setTimeout(() => {
-                        settingsContent.style.display = 'block';
-                    }, 10);
-                    console.log('强制重新渲染设置内容');
+            const section = item.getAttribute('data-section');
+            if (!section) return;
+
+            // 更新导航项状态
+            settingsNavItems.forEach(navItem => navItem.classList.remove('active'));
+            item.classList.add('active');
+
+            // 显示对应的设置部分（其余全部隐藏）
+            sectionIds.forEach(s => {
+                const sectionElement = document.getElementById(`${s}-section`);
+                if (sectionElement) {
+                    sectionElement.style.setProperty('display', s === section ? 'block' : 'none', 'important');
                 }
-                
-                // 如果切换到视觉效果部分，重新初始化预览窗口
-                if (section === 'effects') {
-                    setTimeout(() => {
-                        initPreviewWindow();
-                    }, 100);
-                }
+            });
+
+            // 切换后把内容区滚动到顶部，避免“空白”（之前若在长页面如心电图里滚到底，会仍停在底部）
+            const settingsContent = document.querySelector('.settings-content');
+            if (settingsContent) {
+                settingsContent.scrollTop = 0;
+            }
+
+            // 如果切换到视觉效果部分，重新初始化预览窗口
+            if (section === 'effects') {
+                setTimeout(() => {
+                    initPreviewWindow();
+                }, 100);
+            }
+            // 如果切换到心电图设置，启动预览循环以保证实时更新
+            ecgPreviewSectionVisible = (section === 'ecg');
+            if (section === 'ecg' && ecgEffectPreviewCtx) {
+                drawECGEffectPreview();
             }
         });
     });
@@ -1029,6 +1158,39 @@ function setupSettings() {
             });
         }
     });
+    
+    // 绑定音量滑块事件
+    const audioVolumeSlider = document.getElementById('audioVolume');
+    const audioVolumeValue = document.getElementById('audioVolumeValue');
+    if (audioVolumeSlider && audioVolumeValue) {
+        // 初始化显示当前音量
+        const currentVolume = getVolume();
+        audioVolumeSlider.value = currentVolume;
+        audioVolumeValue.textContent = `${currentVolume}%`;
+        
+        // 绑定滑块变化事件
+        audioVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value)) {
+                setVolume(value);
+                audioVolumeValue.textContent = `${value}%`;
+            }
+        });
+    }
+    
+    // 绑定音效类型选择事件
+    const audioTypeSelect = document.getElementById('audioTypeSelect');
+    if (audioTypeSelect) {
+        // 初始化显示当前音效类型
+        const currentType = getAudioType();
+        audioTypeSelect.value = currentType;
+        
+        // 绑定选择变化事件
+        audioTypeSelect.addEventListener('change', (e) => {
+            const type = e.target.value;
+            setAudioType(type);
+        });
+    }
     
     // 为ECG波形参数添加输入框功能
     const ecgParamRanges = {
@@ -2165,13 +2327,10 @@ function updateParticleEffectWithMultiColors(effectType) {
             ecgEffectPreviewPhase = 0;
         }
         
-        // 递归调用以产生动画
-        requestAnimationFrame(drawECGEffectPreview);
-    }
-    
-    // 启动心电图效果预览动画
-    if (ecgEffectPreviewCtx) {
-        drawECGEffectPreview();
+        // 仅在心电图设置分页可见时继续下一帧，保证预览实时且不后台耗性能
+        if (ecgPreviewSectionVisible && ecgEffectPreviewCtx) {
+            requestAnimationFrame(drawECGEffectPreview);
+        }
     }
     
     if (ecgEffect) {
@@ -3805,6 +3964,30 @@ document.addEventListener('DOMContentLoaded', () => {
     originalBgColor = currentBgColor;
     setupSettings();
     loadBackgroundSettings();
+    
+    // 初始化首次访问检查
+    initFirstVisitCheck();
+    
+    // 绑定首次访问弹窗按钮事件
+    const closeFirstVisitBtn = document.getElementById('closeFirstVisitBtn');
+    const firstVisitOkBtn = document.getElementById('firstVisitOkBtn');
+    const firstVisitSettingsBtn = document.getElementById('firstVisitSettingsBtn');
+    
+    if (closeFirstVisitBtn) {
+        closeFirstVisitBtn.addEventListener('click', hideFirstVisitModal);
+    }
+    if (firstVisitOkBtn) {
+        firstVisitOkBtn.addEventListener('click', hideFirstVisitModal);
+    }
+    if (firstVisitSettingsBtn) {
+        firstVisitSettingsBtn.addEventListener('click', () => {
+            hideFirstVisitModal();
+            const settingsBtn = document.getElementById('settingsBtn');
+            if (settingsBtn) {
+                settingsBtn.click();
+            }
+        });
+    }
     
     // 初始化预览窗口 - 延迟时间更长，确保所有DOM元素都已完全渲染
     console.log('计划初始化预览窗口');
